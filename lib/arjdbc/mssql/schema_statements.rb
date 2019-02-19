@@ -158,6 +158,10 @@ module ActiveRecord
           end
         end
 
+        # override method so we can run to_s on symbols
+        def quote_string(string)
+          string.to_s.gsub(/'/, "''")
+        end
 
         private
 
