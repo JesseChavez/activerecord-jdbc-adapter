@@ -124,7 +124,7 @@ module ActiveRecord::ConnectionAdapters
       # Exact Numerics
       register_class_with_limit m, /^bigint./,          BigIntegerType
       m.alias_type                 'bigint',            'bigint(8)'
-      register_class_with_limit m, /^int\(|\s/,         ActiveRecord::Type::Integer
+      register_class_with_limit m, /^int\(|\s/,         IntegerType
       m.alias_type                 /^integer/,          'int(4)'
       m.alias_type                 'int',               'int(4)'
       register_class_with_limit m, /^smallint./,        SmallIntegerType

@@ -20,6 +20,15 @@ module ActiveRecord
       def type; :real end
     end
 
+
+    class IntegerType < ActiveRecord::Type::Integer
+      def deserialize(value)
+        return if value.nil?
+        value = value.gsub(/\(/,'').gsub(/\)/,'') if value.is_a? ::String
+        super
+      end
+    end
+
     # @private
     class DecimalType < ActiveRecord::Type::Decimal
 
@@ -32,6 +41,8 @@ module ActiveRecord
         if @scale == 0 # act-like an integer
           return value.to_i rescue nil
         end
+
+        value = value.gsub(/\(/,'').gsub(/\)/,'') if value.is_a? ::String
 
         case value
         when ::Float

@@ -558,13 +558,24 @@ module SimpleTestMethods
   end
 
   def test_column_default
-    assert_equal '3.14', DbType.columns_hash['sample_small_decimal'].default
+    # default is correct after saving
+    # probably because of the actual database default
+    db1 = DbType.create!(sample_string:'hello99')
+    assert_equal 'hello99', db1.reload.sample_string
+    assert_equal -1, db1.reload.sample_integer_neg_default
+
+    # default is correct on new and column_defaults
+    # with the deserialize override for integers
+    assert_equal(-1, DbType.column_defaults['sample_integer_neg_default'])
+    assert_equal(-1, DbType.new.sample_integer_neg_default)
+
+    # TODO not correct when asking for default, returns ((-1))
     assert_equal '-1', DbType.columns_hash['sample_integer_neg_default'].default
+
+    assert_equal '3.14', DbType.columns_hash['sample_small_decimal'].default
     assert_equal '42', DbType.columns_hash['sample_integer_no_limit'].default
     assert_equal '', DbType.columns_hash['sample_string'].default
 
-    assert_equal(-1, DbType.column_defaults['sample_integer_neg_default'])
-    assert_equal(-1, DbType.new.sample_integer_neg_default)
   end
 
   def test_created_records_have_different_ids
