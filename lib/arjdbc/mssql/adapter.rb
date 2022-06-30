@@ -385,7 +385,7 @@ module ActiveRecord
         # Deprecated SQL Server types.
         map.register_type 'text',  MSSQL::Type::Text.new
         map.register_type 'ntext', MSSQL::Type::Ntext.new
-        map.register_type 'image', MSSQL::Type::Image.new
+        map.register_type 'image', MSSQL::Type::VarbinaryMax.new
       end
     end
   end

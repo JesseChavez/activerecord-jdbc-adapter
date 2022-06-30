@@ -6,7 +6,7 @@ module ActiveRecord
         NATIVE_DATABASE_TYPES = {
           # Logical Rails types to SQL Server types
           primary_key:   'bigint NOT NULL IDENTITY(1,1) PRIMARY KEY',
-          integer:       { name: 'int', limit: 4 },
+          integer:       { name: 'bigint', limit: 8 },
           boolean:       { name: 'bit' },
           decimal:       { name: 'decimal' },
           float:         { name: 'float' },
@@ -175,7 +175,7 @@ module ActiveRecord
           elsif NO_LIMIT_TYPES.include?(type)
             super(type)
           elsif %i[int integer].include?(type)
-            if limit.nil? || limit == 4
+            if limit == 4
               'int'
             elsif limit == 2
               'smallint'
