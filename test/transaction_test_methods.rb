@@ -33,7 +33,7 @@ module TransactionTestMethods
   end
 
   def setup_failed?; @setup_failed ||= false end
-  
+
   def test_transaction_isolation_read_uncommitted
     pend "fails with lazy transactions. @dr-itz looking into it :)"
 

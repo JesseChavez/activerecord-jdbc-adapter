@@ -27,7 +27,7 @@ class DateTest < Test::Unit::TestCase
 
   def test_prepared_statement_for_date_column_sends_correct_date_to_postgres
     Post.create!
-    date = Date.new(2020, 2, 12)
+    date = Date.new(2020, 10, 4)
     Post.first.update_columns published_on: date
 
     assert_equal date, Post.first.published_on
@@ -37,7 +37,7 @@ class DateTest < Test::Unit::TestCase
 
   def test_unprepared_statement_for_date_column_sends_correct_date_to_postgres
     Post.create!
-    date = Date.new(2020, 2, 12)
+    date = Date.new(2020, 10, 4)
 
     ActiveRecord::Base.connection.unprepared_statement do
       Post.first.update_columns published_on: date
@@ -50,8 +50,7 @@ class DateTest < Test::Unit::TestCase
 
   def test_raw_arel_for_date_column_sends_correct_date_to_postgres
     Post.create!
-    date = Date.new(2020, 2, 12)
-
+    date = Date.new(2020, 10, 4)
     update_arel = Arel::UpdateManager.new
     update_arel.table Post.arel_table
     update_arel.set [

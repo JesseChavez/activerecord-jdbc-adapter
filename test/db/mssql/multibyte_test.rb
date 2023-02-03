@@ -1,5 +1,4 @@
-# encoding: utf-8
-require 'jdbc_common'
+require 'test_helper'
 require 'db/mssql'
 
 class MSSQLMultibyteTest < Test::Unit::TestCase

@@ -111,3 +111,26 @@ connections:
     arunit2:
       adapter: sqlite3
       database: ':memory:'
+
+  # db settings for the jdbc mssql adapter
+  # at the moment adapter works best with prepared statements true
+  sqlserver:
+    # NOTE: we use the mssql-gem to load the driver version 7.0, old versions
+    # have several bugs that affects foreign keys
+    # https://github.com/Microsoft/mssql-jdbc/issues/467
+    # and https://github.com/Microsoft/mssql-jdbc/issues/665
+    <% require 'jdbc/mssql' if ENV['DRIVER'] =~ /sqlserver/i %>
+    arunit:
+      database: jdbc_arunit
+      host: localhost
+      adapter:  sqlserver
+      username: arjdbc
+      password: password
+      prepared_statements: true
+    arunit2:
+      database: jdbc_arunit2
+      host: localhost
+      adapter:  sqlserver
+      username: arjdbc
+      password: password
+      prepared_statements: true

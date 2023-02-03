@@ -10,7 +10,9 @@ module ArJdbc
 
     require 'arjdbc/tasks/jdbc_database_tasks'
     require 'arjdbc/tasks/sqlite_database_tasks_patch'
+    require 'arjdbc/tasks/mssql_database_tasks'
     register_tasks(/^jdbc$/, JdbcDatabaseTasks)
+    register_tasks(/sqlserver/, MSSQLDatabaseTasks)
 
     # NOTE: no need to register "built-in" adapters such as MySQL
 

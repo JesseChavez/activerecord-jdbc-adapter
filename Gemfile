@@ -55,6 +55,8 @@ group :test do
   gem 'mocha', '~> 1.2', require: false # Rails has '~> 0.14'
 
   gem 'bcrypt', '~> 3.1.11', require: false
+  gem 'jdbc-mssql', '~> 0.9.0', require: nil
+  # gem 'pry-debugger-jruby', platform: :jruby
 end
 
 group :rails do

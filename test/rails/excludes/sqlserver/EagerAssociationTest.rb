@@ -1,0 +1,1 @@
+exclude :test_including_association_based_on_sql_condition_and_no_database_column, 'sqlserver does not have LIMIT'
