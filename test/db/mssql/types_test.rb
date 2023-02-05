@@ -6,11 +6,11 @@ class MSSQLDateTimeTypesTest < Test::Unit::TestCase
   TABLE_DEFINITION = "CREATE TABLE date_and_times " <<
     "( [id] int NOT NULL IDENTITY(1, 1) PRIMARY KEY, [datetime] DATETIME )"
 
-  @@default_timezone = ActiveRecord::Base.default_timezone
+  @@default_timezone = ActiveRecord.default_timezone
 
   def self.startup
     super
-    ActiveRecord::Base.default_timezone = :local
+    ActiveRecord.default_timezone = :local
     ActiveRecord::Base.connection.execute TABLE_DEFINITION
     # ActiveRecord::Base.logger.level = Logger::DEBUG
   end
@@ -18,7 +18,7 @@ class MSSQLDateTimeTypesTest < Test::Unit::TestCase
   def self.shutdown
     # ActiveRecord::Base.logger.level = Logger::WARN
     ActiveRecord::Base.connection.execute "DROP TABLE date_and_times"
-    ActiveRecord::Base.default_timezone = @@default_timezone
+    ActiveRecord.default_timezone = @@default_timezone
     super
   end
 
@@ -33,8 +33,8 @@ class MSSQLDateTimeTypesTest < Test::Unit::TestCase
 
   def test_datetime_with_zone
     time_zone = false
-    default_timezone = ActiveRecord::Base.default_timezone
-    ActiveRecord::Base.default_timezone = :local
+    default_timezone = ActiveRecord.default_timezone
+    ActiveRecord.default_timezone = :local
     time_zone = Time.zone
     Time.zone = 'CET'
 
@@ -42,7 +42,7 @@ class MSSQLDateTimeTypesTest < Test::Unit::TestCase
     model = DateAndTime.create! :datetime => time
     assert_equal time, model.reload.datetime
   ensure
-    ActiveRecord::Base.default_timezone = default_timezone
+    ActiveRecord.default_timezone = default_timezone
     Time.zone = time_zone unless time_zone == false
   end
 
