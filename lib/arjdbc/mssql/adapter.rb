@@ -309,7 +309,120 @@ module ActiveRecord
         end
       end
 
+      class << self
+        private
+
+        # This method is called indirectly by the abstract method
+        # 'fetch_type_metadata' which then it is called by the java part when
+        # calculating a table's columns.
+        def initialize_type_map(map)
+          # Build the type mapping from SQL Server to ActiveRecord
+
+          # Integer types.
+          map.register_type 'int',      MSSQL::Type::Integer.new(limit: 4)
+          map.register_type 'tinyint',  MSSQL::Type::TinyInteger.new(limit: 1)
+          map.register_type 'smallint', MSSQL::Type::SmallInteger.new(limit: 2)
+          map.register_type 'bigint',   MSSQL::Type::BigInteger.new(limit: 8)
+
+          # Exact Numeric types.
+          map.register_type %r{\Adecimal}i do |sql_type|
+            scale = extract_scale(sql_type)
+            precision = extract_precision(sql_type)
+            if scale == 0
+              MSSQL::Type::DecimalWithoutScale.new(precision: precision)
+            else
+              MSSQL::Type::Decimal.new(precision: precision, scale: scale)
+            end
+          end
+          map.register_type %r{\Amoney\z}i,      MSSQL::Type::Money.new
+          map.register_type %r{\Asmallmoney\z}i, MSSQL::Type::SmallMoney.new
+
+          # Approximate Numeric types.
+          map.register_type %r{\Afloat\z}i,    MSSQL::Type::Float.new
+          map.register_type %r{\Areal\z}i,     MSSQL::Type::Real.new
+
+          # Character strings CHAR and VARCHAR (it can become Unicode UTF-8)
+          map.register_type 'varchar(max)', MSSQL::Type::VarcharMax.new
+          map.register_type %r{\Avarchar\(\d+\)} do |sql_type|
+            limit = extract_limit(sql_type)
+            MSSQL::Type::Varchar.new(limit: limit)
+          end
+          map.register_type %r{\Achar\(\d+\)} do |sql_type|
+            limit = extract_limit(sql_type)
+            MSSQL::Type::Char.new(limit: limit)
+          end
+
+          # Character strings NCHAR and NVARCHAR (by default Unicode UTF-16)
+          map.register_type %r{\Anvarchar\(\d+\)} do |sql_type|
+            limit = extract_limit(sql_type)
+            MSSQL::Type::Nvarchar.new(limit: limit)
+          end
+          map.register_type %r{\Anchar\(\d+\)} do |sql_type|
+            limit = extract_limit(sql_type)
+            MSSQL::Type::Nchar.new(limit: limit)
+          end
+          map.register_type 'nvarchar(max)', MSSQL::Type::NvarcharMax.new
+          map.register_type 'nvarchar(4000)', MSSQL::Type::Nvarchar.new
+
+          # Binary data types.
+          map.register_type              'varbinary(max)',       MSSQL::Type::VarbinaryMax.new
+          register_class_with_limit map, %r{\Abinary\(\d+\)},    MSSQL::Type::BinaryBasic
+          register_class_with_limit map, %r{\Avarbinary\(\d+\)}, MSSQL::Type::Varbinary
+
+          # Miscellaneous types, Boolean, XML, UUID
+          # FIXME The xml data needs to be reviewed and fixed
+          map.register_type 'bit',                     MSSQL::Type::Boolean.new
+          map.register_type %r{\Auniqueidentifier\z}i, MSSQL::Type::UUID.new
+          map.register_type %r{\Axml\z}i,              MSSQL::Type::XML.new
+
+          # Date and time types
+          map.register_type 'date',          MSSQL::Type::Date.new
+          map.register_type 'datetime',      MSSQL::Type::DateTime.new
+          map.register_type 'smalldatetime', MSSQL::Type::SmallDateTime.new
+          register_class_with_precision map, %r{\Atime\(\d+\)}i, MSSQL::Type::Time
+          map.register_type 'time(7)',       MSSQL::Type::Time.new
+          register_class_with_precision map, %r{\Adatetime2\(\d+\)}i, MSSQL::Type::DateTime2
+          map.register_type 'datetime2(7)',  MSSQL::Type::DateTime2.new
+
+          # TODO: we should have identity separated from the sql_type
+          # let's say in another attribute (this will help to pass more AR tests),
+          # also we add collation attribute per column.
+          # aliases
+          map.alias_type 'int identity',    'int'
+          map.alias_type 'bigint identity', 'bigint'
+          map.alias_type 'integer',         'int'
+          map.alias_type 'integer',         'int'
+          map.alias_type 'INTEGER',         'int'
+          map.alias_type 'TINYINT',         'tinyint'
+          map.alias_type 'SMALLINT',        'smallint'
+          map.alias_type 'BIGINT',          'bigint'
+          map.alias_type %r{\Anumeric}i,    'decimal'
+          map.alias_type %r{\Anumber}i,     'decimal'
+          map.alias_type %r{\Adouble\z}i,   'float'
+          map.alias_type 'string',          'nvarchar(4000)'
+          map.alias_type %r{\Aboolean\z}i,  'bit'
+          map.alias_type 'DATE',            'date'
+          map.alias_type 'DATETIME',        'datetime'
+          map.alias_type 'SMALLDATETIME',   'smalldatetime'
+          map.alias_type %r{\Atime\z}i,     'time(7)'
+          map.alias_type %r{\Abinary\z}i,   'varbinary(max)'
+          map.alias_type %r{\Ablob\z}i,     'varbinary(max)'
+          map.alias_type %r{\Adatetime2\z}i, 'datetime2(7)'
+
+          # Deprecated SQL Server types.
+          map.register_type 'text',  MSSQL::Type::Text.new
+          map.register_type 'ntext', MSSQL::Type::Ntext.new
+          map.register_type 'image', MSSQL::Type::Image.new
+        end
+      end
+
+      TYPE_MAP = Type::TypeMap.new.tap { |m| initialize_type_map(m) }
+
       private
+
+      def type_map
+        TYPE_MAP
+      end
 
       def translate_exception(exception, message:, sql:, binds:)
         case message
@@ -332,109 +445,6 @@ module ActiveRecord
         else
           super
         end
-      end
-
-      # This method is called indirectly by the abstract method
-      # 'fetch_type_metadata' which then it is called by the java part when
-      # calculating a table's columns.
-      def initialize_type_map(map = type_map)
-        # Build the type mapping from SQL Server to ActiveRecord
-
-        # Integer types.
-        map.register_type 'int',      MSSQL::Type::Integer.new(limit: 4)
-        map.register_type 'tinyint',  MSSQL::Type::TinyInteger.new(limit: 1)
-        map.register_type 'smallint', MSSQL::Type::SmallInteger.new(limit: 2)
-        map.register_type 'bigint',   MSSQL::Type::BigInteger.new(limit: 8)
-
-        # Exact Numeric types.
-        map.register_type %r{\Adecimal}i do |sql_type|
-          scale = extract_scale(sql_type)
-          precision = extract_precision(sql_type)
-          if scale == 0
-            MSSQL::Type::DecimalWithoutScale.new(precision: precision)
-          else
-            MSSQL::Type::Decimal.new(precision: precision, scale: scale)
-          end
-        end
-        map.register_type %r{\Amoney\z}i,      MSSQL::Type::Money.new
-        map.register_type %r{\Asmallmoney\z}i, MSSQL::Type::SmallMoney.new
-
-        # Approximate Numeric types.
-        map.register_type %r{\Afloat\z}i,    MSSQL::Type::Float.new
-        map.register_type %r{\Areal\z}i,     MSSQL::Type::Real.new
-
-        # Character strings CHAR and VARCHAR (it can become Unicode UTF-8)
-        map.register_type 'varchar(max)', MSSQL::Type::VarcharMax.new
-        map.register_type %r{\Avarchar\(\d+\)} do |sql_type|
-          limit = extract_limit(sql_type)
-          MSSQL::Type::Varchar.new(limit: limit)
-        end
-        map.register_type %r{\Achar\(\d+\)} do |sql_type|
-          limit = extract_limit(sql_type)
-          MSSQL::Type::Char.new(limit: limit)
-        end
-
-        # Character strings NCHAR and NVARCHAR (by default Unicode UTF-16)
-        map.register_type %r{\Anvarchar\(\d+\)} do |sql_type|
-          limit = extract_limit(sql_type)
-          MSSQL::Type::Nvarchar.new(limit: limit)
-        end
-        map.register_type %r{\Anchar\(\d+\)} do |sql_type|
-          limit = extract_limit(sql_type)
-          MSSQL::Type::Nchar.new(limit: limit)
-        end
-        map.register_type 'nvarchar(max)', MSSQL::Type::NvarcharMax.new
-        map.register_type 'nvarchar(4000)', MSSQL::Type::Nvarchar.new
-
-        # Binary data types.
-        map.register_type              'varbinary(max)',       MSSQL::Type::VarbinaryMax.new
-        register_class_with_limit map, %r{\Abinary\(\d+\)},    MSSQL::Type::BinaryBasic
-        register_class_with_limit map, %r{\Avarbinary\(\d+\)}, MSSQL::Type::Varbinary
-
-        # Miscellaneous types, Boolean, XML, UUID
-        # FIXME The xml data needs to be reviewed and fixed
-        map.register_type 'bit',                     MSSQL::Type::Boolean.new
-        map.register_type %r{\Auniqueidentifier\z}i, MSSQL::Type::UUID.new
-        map.register_type %r{\Axml\z}i,              MSSQL::Type::XML.new
-
-        # Date and time types
-        map.register_type 'date',          MSSQL::Type::Date.new
-        map.register_type 'datetime',      MSSQL::Type::DateTime.new
-        map.register_type 'smalldatetime', MSSQL::Type::SmallDateTime.new
-        register_class_with_precision map, %r{\Atime\(\d+\)}i, MSSQL::Type::Time
-        map.register_type 'time(7)',       MSSQL::Type::Time.new
-        register_class_with_precision map, %r{\Adatetime2\(\d+\)}i, MSSQL::Type::DateTime2
-        map.register_type 'datetime2(7)',  MSSQL::Type::DateTime2.new
-
-        # TODO: we should have identity separated from the sql_type
-        # let's say in another attribute (this will help to pass more AR tests),
-        # also we add collation attribute per column.
-        # aliases
-        map.alias_type 'int identity',    'int'
-        map.alias_type 'bigint identity', 'bigint'
-        map.alias_type 'integer',         'int'
-        map.alias_type 'integer',         'int'
-        map.alias_type 'INTEGER',         'int'
-        map.alias_type 'TINYINT',         'tinyint'
-        map.alias_type 'SMALLINT',        'smallint'
-        map.alias_type 'BIGINT',          'bigint'
-        map.alias_type %r{\Anumeric}i,    'decimal'
-        map.alias_type %r{\Anumber}i,     'decimal'
-        map.alias_type %r{\Adouble\z}i,   'float'
-        map.alias_type 'string',          'nvarchar(4000)'
-        map.alias_type %r{\Aboolean\z}i,  'bit'
-        map.alias_type 'DATE',            'date'
-        map.alias_type 'DATETIME',        'datetime'
-        map.alias_type 'SMALLDATETIME',   'smalldatetime'
-        map.alias_type %r{\Atime\z}i,     'time(7)'
-        map.alias_type %r{\Abinary\z}i,   'varbinary(max)'
-        map.alias_type %r{\Ablob\z}i,     'varbinary(max)'
-        map.alias_type %r{\Adatetime2\z}i, 'datetime2(7)'
-
-        # Deprecated SQL Server types.
-        map.register_type 'text',  MSSQL::Type::Text.new
-        map.register_type 'ntext', MSSQL::Type::Ntext.new
-        map.register_type 'image', MSSQL::Type::Image.new
       end
 
       # Returns an array of Column objects for the table specified by +table_name+.
