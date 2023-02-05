@@ -28,11 +28,23 @@ module ActiveRecord
           super && column.identity?
         end
 
+        def schema_precision(column)
+          case column.type
+          when :datetime
+            if column.precision == 7
+              nil
+            else
+              column.precision.inspect
+            end
+          else
+            super
+          end
+        end
+
         # def schema_collation(column)
         #   return unless column.collation
         #   column.collation if column.collation != collation
         # end
-
       end
     end
   end

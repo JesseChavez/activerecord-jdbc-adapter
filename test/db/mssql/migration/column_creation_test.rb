@@ -24,14 +24,14 @@ module MSSQLMigration
       created_at = Review.columns_hash['created_at']
 
       assert_equal 'datetime2(7)', created_at.sql_type
-      assert_equal nil,            created_at.precision
+      assert_equal 7,              created_at.precision
       assert_equal false,          created_at.null
       assert_equal nil,            created_at.default
 
       updated_at = Review.columns_hash['updated_at']
 
       assert_equal 'datetime2(7)', updated_at.sql_type
-      assert_equal nil,            updated_at.precision
+      assert_equal 7,              updated_at.precision
       assert_equal false,          updated_at.null
       assert_equal nil,            updated_at.default
     end

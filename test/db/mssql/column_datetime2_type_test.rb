@@ -38,7 +38,7 @@ class MSSQLColumnDateTime2TypesTest < Test::Unit::TestCase
     assert_equal :datetime,      column.type
     assert_equal true,           column.null
     assert_equal 'datetime2(7)', column.sql_type
-    assert_equal nil,            column.precision
+    assert_equal 7,              column.precision
     assert_equal nil,            column.default
 
     type = DateTime2Types.connection.send(:type_map).lookup(column.sql_type)
@@ -53,6 +53,21 @@ class MSSQLColumnDateTime2TypesTest < Test::Unit::TestCase
     assert_equal 'datetime2(0)', column.sql_type
     assert_equal 0,              column.precision
     assert_equal nil,            column.default
+
+    type = DateTime2Types.connection.send(:type_map).lookup(column.sql_type)
+    assert_instance_of Type::DateTime2, type
+  end
+
+  def test_datetime2_with_precision_six
+    # NOTE: this spec is need to catch precision breakage on upgrades
+    # since other adapters have default precision 6
+    column = DateTime2Types.columns_hash['my_datetime_two']
+
+    assert_equal :datetime,                    column.type
+    assert_equal false,                        column.null
+    assert_equal 'datetime2(6)',               column.sql_type
+    assert_equal 6,                            column.precision
+    assert_equal '2017-02-28 01:59:19.789567', column.default
 
     type = DateTime2Types.connection.send(:type_map).lookup(column.sql_type)
     assert_instance_of Type::DateTime2, type

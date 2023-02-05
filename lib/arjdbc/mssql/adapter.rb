@@ -382,7 +382,7 @@ module ActiveRecord
           register_class_with_precision map, %r{\Atime\(\d+\)}i, MSSQL::Type::Time
           map.register_type 'time(7)',       MSSQL::Type::Time.new
           register_class_with_precision map, %r{\Adatetime2\(\d+\)}i, MSSQL::Type::DateTime2
-          map.register_type 'datetime2(7)',  MSSQL::Type::DateTime2.new
+          # map.register_type 'datetime2(7)',  MSSQL::Type::DateTime2.new
 
           # TODO: we should have identity separated from the sql_type
           # let's say in another attribute (this will help to pass more AR tests),
