@@ -138,7 +138,7 @@ module ActiveRecord
           execute "ALTER TABLE #{quote_table_name(table_name)} DROP COLUMN #{quote_column_name(column_name)}"
         end
 
-        def drop_table(table_name, options = {})
+        def drop_table(table_name, **options)
           # mssql cannot recreate referenced table with force: :cascade
           # https://docs.microsoft.com/en-us/sql/t-sql/statements/drop-table-transact-sql?view=sql-server-2017
           if options[:force] == :cascade
