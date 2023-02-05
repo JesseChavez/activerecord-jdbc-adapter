@@ -360,6 +360,9 @@ module ActiveRecord
         end
 
         def new_column_from_field(table_name, field)
+          # NOTE: this method is used by the columns method in the abstract Class
+          # to map column_definitions. It would be good if column_definitions is
+          # implemented in ruby
           field
         end
 
