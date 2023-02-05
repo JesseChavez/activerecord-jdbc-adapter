@@ -75,19 +75,34 @@ module ActiveRecord
       class TableDefinition < ActiveRecord::ConnectionAdapters::TableDefinition
         include ColumnMethods
 
+        def column(name, type, index: nil, **options)
+          # TODO: remove this when the below changed is released
+          #   Fix erroneous nil default precision on virtual datetime columns #46110
+          #   https://github.com/rails/rails/pull/46110
+          #
+          if @conn.supports_datetime_with_precision?
+            if type == :datetime && !options.key?(:precision)
+              options[:precision] = 7
+            end
+          end
+
+          super
+        end
+
+
         def new_column_definition(name, type, **options)
           case type
           when :primary_key
             options[:is_identity] = true
+          when :datetime
+            options[:precision] = 7 if !options.key?(:precision) && @conn.supports_datetime_with_precision?
           end
 
           super
         end
 
         def timestamps(**options)
-          if !options.key?(:precision) && @conn.supports_datetime_with_precision?
-            options[:precision] = 7
-          end
+          options[:precision] = 7 if !options.key?(:precision) && @conn.supports_datetime_with_precision?
 
           super
         end
