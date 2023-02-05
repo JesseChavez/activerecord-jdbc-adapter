@@ -345,8 +345,8 @@ module ActiveRecord
           MSSQL::SchemaCreation.new(self)
         end
 
-        def create_table_definition(*args)
-          MSSQL::TableDefinition.new(self, *args)
+        def create_table_definition(name, **options)
+          MSSQL::TableDefinition.new(self, name, **options)
         end
 
         def new_column_from_field(table_name, field)

@@ -6,7 +6,7 @@ class MSSQLLimitOffsetTest < Test::Unit::TestCase
   class CreateLegacyShips < ActiveRecord::Migration[6.0]
 
     def self.up
-      create_table "legacy_ships", { :primary_key => :ShipKey } do |t|
+      create_table 'legacy_ships', primary_key: :ShipKey do |t|
         t.string "name", :limit => 50, :null => false
         t.integer "width", :default => 123
         t.integer "length", :default => 456
