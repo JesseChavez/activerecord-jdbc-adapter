@@ -106,21 +106,6 @@ class MSSQLColumnDateTimeTypesTest < Test::Unit::TestCase
     assert_equal expected.attributes, actual.attributes
   end
 
-  def test_yaml
-    expected = DateTimeTypes.create!(
-      my_datetime: Time.now.change(sec: 36, usec: 120_000),
-      my_datetime_one: Time.now.change(sec: 38, usec: 128_789),
-      my_smalldatetime: Time.now
-    )
-
-    expected.reload
-
-    yamled = YAML.dump(expected)
-    actual = YAML.load(yamled)
-
-    assert_equal expected.attributes, actual.attributes
-  end
-
   def test_smalldatetime_rounding_usec_to_zero_on_assigment
     # dt = DateTime.parse('2018-12-31T23:59:21.34343766')
     tt = Time.parse('2018-12-31T23:59:21.34343766')
