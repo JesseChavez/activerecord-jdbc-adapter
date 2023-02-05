@@ -158,7 +158,7 @@ module ActiveRecord
       end
 
       def clear_cache!
-        reload_type_map
+        # reload_type_map
         super
       end
 
