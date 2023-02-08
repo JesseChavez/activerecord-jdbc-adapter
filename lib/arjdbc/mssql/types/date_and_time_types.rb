@@ -13,9 +13,9 @@ module ActiveRecord
             return %("#{value}") if value.acts_like?(:string)
 
             if value.usec > 0
-              %("#{value.to_s(:db)}.#{value.usec.to_s.remove(/0+$/)}")
+              %("#{value.to_fs(:db)}.#{value.usec.to_s.remove(/0+$/)}")
             else
-              %("#{value.to_s(:db)}")
+              %("#{value.to_fs(:db)}")
             end
           end
 
@@ -54,9 +54,9 @@ module ActiveRecord
             return %("#{value}") if value.acts_like?(:string)
 
             if value.usec > 0
-              %("#{value.to_s(:db)}.#{value.usec.to_s.remove(/0+$/)}")
+              %("#{value.to_fs(:db)}.#{value.usec.to_s.remove(/0+$/)}")
             else
-              %("#{value.to_s(:db)}")
+              %("#{value.to_fs(:db)}")
             end
           end
 
@@ -100,9 +100,9 @@ module ActiveRecord
             return %("#{value}") if value.acts_like?(:string)
 
             if value.usec > 0
-              %("#{value.to_s(:db)}.#{value.usec.to_s.remove(/0+$/)}")
+              %("#{value.to_fs(:db)}.#{value.usec.to_s.remove(/0+$/)}")
             else
-              %("#{value.to_s(:db)}")
+              %("#{value.to_fs(:db)}")
             end
           end
 

@@ -15,7 +15,7 @@ module ActiveRecord
             value = time_with_db_timezone(value)
           end
 
-          result = value.to_s(:db)
+          result = value.to_fs(:db)
 
           if value.respond_to?(:usec) && value.usec > 0
             "#{result}.#{sprintf("%06d", value.usec)}"

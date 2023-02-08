@@ -37,7 +37,7 @@ module MSSQLMigration
     end
 
     def test_add_timestamp_custom
-      right_now = Time.now.to_s(:db)
+      right_now = Time.now.to_fs(:db)
       assert_nothing_raised do
         add_timestamps(:reviews, null: true, precision: 3, default: right_now)
       end
