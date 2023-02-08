@@ -105,7 +105,7 @@ module ActiveRecord
         private
 
         def time_with_db_timezone(value)
-          zone_conv_method = if ActiveRecord::Base.default_timezone == :utc
+          zone_conv_method = if ActiveRecord.default_timezone == :utc
                                :getutc
                              else
                                :getlocal
