@@ -333,16 +333,20 @@ module ActiveRecord
           quoted_table = quote_table_name(table_name)
           quoted_column = quote_column_name(column_name)
           quoted_default = quote(default)
+
           unless null || default.nil?
             execute("UPDATE #{quoted_table} SET #{quoted_column}=#{quoted_default} WHERE #{quoted_column} IS NULL")
           end
+
+          options = { limit: column.limit, precision: column.precision, scale: column.scale }
+
           sql_alter = [
             "ALTER TABLE #{quoted_table}",
-            "ALTER COLUMN #{quoted_column} #{type_to_sql(column.type, limit: column.limit, precision: column.precision, scale: column.scale)}",
-            (' NOT NULL' unless null)
+            "ALTER COLUMN #{quoted_column} #{type_to_sql(column.type, **options)}",
+            ('NOT NULL' unless null)
           ]
 
-          execute(sql_alter.join(' '))
+          execute(sql_alter.compact.join(' '))
         end
 
         def update_table_definition(table_name, base) #:nodoc:
