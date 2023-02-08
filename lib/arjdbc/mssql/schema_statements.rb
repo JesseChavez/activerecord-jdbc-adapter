@@ -127,9 +127,17 @@ module ActiveRecord
           create_database(name, options)
         end
 
-        def remove_column(table_name, column_name, type = nil, **options)
-          raise ArgumentError.new('You must specify at least one column name.  Example: remove_column(:people, :first_name)') if column_name.is_a? Array
+        def remove_columns(table_name, *column_names, type: nil, **options)
+          if column_names.empty?
+            raise ArgumentError.new('You must specify at least one column name. Example: remove_columns(:people, :first_name)')
+          end
 
+          column_names.each do |column_name|
+            remove_column(table_name, column_name, type, **options)
+          end
+        end
+
+        def remove_column(table_name, column_name, _type = nil, **options)
           return if options[:if_exists] == true && !column_exists?(table_name, column_name)
 
           remove_check_constraints(table_name, column_name)
