@@ -5,7 +5,7 @@
 #
 MSSQL_CONFIG = {
   adapter:  'sqlserver',
-  database: ENV['SQLDATABASE'] || 'arjdbc_test',
+  database: ENV['SQLDATABASE'] || 'arjdbc_61_test',
   username: ENV['SQLUSER'] || 'arjdbc',
   password: ENV['SQLPASS'] || 'password',
   host:     ENV['SQLHOST'] || 'localhost'
