@@ -30,7 +30,7 @@ Add the following to your `Gemfile`:
 ```ruby
 platforms :jruby do
   # Use jdbc as the database for Active Record
-  gem 'activerecord-jdbc-alt-adapter', '~> 60.0.0.rc1'
+  gem 'activerecord-jdbc-alt-adapter', '~> 70.0.0.rc1'
   gem 'jdbc-mssql', '~> 0.9.0'
 end
 ```
