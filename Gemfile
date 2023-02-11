@@ -44,7 +44,7 @@ elsif ENV['AR_VERSION'] # Use specific version of AR and not .gemspec version
     end
   end
 else
-  gemspec name: 'activerecord-jdbc-adapter' # Use versiom from .gemspec
+  gemspec name: 'activerecord-jdbc-alt-adapter' # Use versiom from .gemspec
 end
 
 gem 'rake', require: nil
