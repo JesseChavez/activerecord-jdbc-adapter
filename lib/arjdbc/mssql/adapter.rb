@@ -143,13 +143,32 @@ module ActiveRecord
       def supports_insert_on_conflict?
         false
       end
+
       alias supports_insert_on_duplicate_skip? supports_insert_on_conflict?
       alias supports_insert_on_duplicate_update? supports_insert_on_conflict?
       alias supports_insert_conflict_target? supports_insert_on_conflict?
 
+      def supports_insert_returning?
+        true
+      end
+
       def build_insert_sql(insert) # :nodoc:
         # TODO: hope we can implement an upsert like feature
-        "INSERT #{insert.into} #{insert.values_list}"
+        # "INSERT #{insert.into} #{insert.values_list}"
+        sql = +"INSERT #{insert.into}"
+
+        if returning = insert.send(:insert_all).returning
+          returning_sql = if returning.is_a?(String)
+                            returning
+                          else
+                            returning.map { |column| "INSERTED.#{quote_column_name(column)}" }.join(', ')
+                          end
+
+          sql << " OUTPUT #{returning_sql}"
+        end
+
+        sql << " #{insert.values_list}"
+        sql
       end
 
       # Overrides abstract method which always returns false
