@@ -7,36 +7,36 @@ module ActiveRecord
 
         NATIVE_DATABASE_TYPES = {
           # Logical Rails types to SQL Server types
-          primary_key:   'bigint NOT NULL IDENTITY(1,1) PRIMARY KEY',
-          integer:       { name: 'int', limit: 4 },
-          boolean:       { name: 'bit' },
-          decimal:       { name: 'decimal' },
-          float:         { name: 'float' },
-          date:          { name: 'date' },
-          time:          { name: 'time' },
-          datetime:      { name: 'datetime2' },
-          string:        { name: 'nvarchar', limit: 4000 },
-          text:          { name: 'nvarchar(max)' },
-          binary:        { name: 'varbinary(max)' },
+          primary_key:    'bigint NOT NULL IDENTITY(1,1) PRIMARY KEY',
+          integer:        { name: 'int', limit: 4 },
+          boolean:        { name: 'bit' },
+          decimal:        { name: 'decimal' },
+          float:          { name: 'float' },
+          date:           { name: 'date' },
+          time:           { name: 'time' },
+          datetime:       { name: 'datetime2' },
+          string:         { name: 'nvarchar', limit: 4000 },
+          text:           { name: 'nvarchar(max)' },
+          binary:         { name: 'varbinary(max)' },
           # Other types or SQL Server specific
-          bigint:        { name: 'bigint' },
-          smalldatetime: { name: 'smalldatetime' },
+          bigint:         { name: 'bigint' },
+          smalldatetime:  { name: 'smalldatetime' },
           datetime_basic: { name: 'datetime' },
-          timestamp:     { name: 'datetime' },
-          real:          { name: 'real' },
-          money:         { name: 'money' },
-          smallmoney:    { name: 'smallmoney' },
-          char:          { name: 'char' },
-          nchar:         { name: 'nchar' },
-          varchar:       { name: 'varchar', limit: 8000 },
-          varchar_max:   { name: 'varchar(max)' },
-          uuid:          { name: 'uniqueidentifier' },
-          binary_basic:  { name: 'binary' },
-          varbinary:     { name: 'varbinary', limit: 8000 },
+          timestamp:      { name: 'datetime' },
+          real:           { name: 'real' },
+          money:          { name: 'money' },
+          smallmoney:     { name: 'smallmoney' },
+          char:           { name: 'char' },
+          nchar:          { name: 'nchar' },
+          varchar:        { name: 'varchar', limit: 8000 },
+          varchar_max:    { name: 'varchar(max)' },
+          uuid:           { name: 'uniqueidentifier' },
+          binary_basic:   { name: 'binary' },
+          varbinary:      { name: 'varbinary', limit: 8000 },
           # Deprecated SQL Server types
-          image:         { name: 'image' },
-          ntext:         { name: 'ntext' },
-          text_basic:    { name: 'text' }
+          image:          { name: 'image' },
+          ntext:          { name: 'ntext' },
+          text_basic:     { name: 'text' }
         }.freeze
 
         def native_database_types
@@ -127,9 +127,17 @@ module ActiveRecord
           create_database(name, options)
         end
 
-        def remove_column(table_name, column_name, type = nil, options = {})
-          raise ArgumentError.new('You must specify at least one column name.  Example: remove_column(:people, :first_name)') if column_name.is_a? Array
+        def remove_columns(table_name, *column_names, type: nil, **options)
+          if column_names.empty?
+            raise ArgumentError.new('You must specify at least one column name. Example: remove_columns(:people, :first_name)')
+          end
 
+          column_names.each do |column_name|
+            remove_column(table_name, column_name, type, **options)
+          end
+        end
+
+        def remove_column(table_name, column_name, _type = nil, **options)
           return if options[:if_exists] == true && !column_exists?(table_name, column_name)
 
           remove_check_constraints(table_name, column_name)
@@ -138,7 +146,7 @@ module ActiveRecord
           execute "ALTER TABLE #{quote_table_name(table_name)} DROP COLUMN #{quote_column_name(column_name)}"
         end
 
-        def drop_table(table_name, options = {})
+        def drop_table(table_name, **options)
           # mssql cannot recreate referenced table with force: :cascade
           # https://docs.microsoft.com/en-us/sql/t-sql/statements/drop-table-transact-sql?view=sql-server-2017
           if options[:force] == :cascade
@@ -248,9 +256,19 @@ module ActiveRecord
           (order_columns << super).join(', ')
         end
 
-        def add_timestamps(table_name, options = {})
+        def add_timestamps(table_name, **options)
           if !options.key?(:precision) && supports_datetime_with_precision?
             options[:precision] = 7
+          end
+
+          super
+        end
+
+        def add_column(table_name, column_name, type, **options)
+          if supports_datetime_with_precision?
+            if type == :datetime && !options.key?(:precision)
+              options[:precision] = 7
+            end
           end
 
           super
@@ -323,16 +341,20 @@ module ActiveRecord
           quoted_table = quote_table_name(table_name)
           quoted_column = quote_column_name(column_name)
           quoted_default = quote(default)
+
           unless null || default.nil?
             execute("UPDATE #{quoted_table} SET #{quoted_column}=#{quoted_default} WHERE #{quoted_column} IS NULL")
           end
+
+          options = { limit: column.limit, precision: column.precision, scale: column.scale }
+
           sql_alter = [
             "ALTER TABLE #{quoted_table}",
-            "ALTER COLUMN #{quoted_column} #{type_to_sql(column.type, limit: column.limit, precision: column.precision, scale: column.scale)}",
-            (' NOT NULL' unless null)
+            "ALTER COLUMN #{quoted_column} #{type_to_sql(column.type, **options)}",
+            ('NOT NULL' unless null)
           ]
 
-          execute(sql_alter.join(' '))
+          execute(sql_alter.compact.join(' '))
         end
 
         def update_table_definition(table_name, base) #:nodoc:
@@ -345,11 +367,14 @@ module ActiveRecord
           MSSQL::SchemaCreation.new(self)
         end
 
-        def create_table_definition(*args)
-          MSSQL::TableDefinition.new(self, *args)
+        def create_table_definition(name, **options)
+          MSSQL::TableDefinition.new(self, name, **options)
         end
 
         def new_column_from_field(table_name, field)
+          # NOTE: this method is used by the columns method in the abstract Class
+          # to map column_definitions. It would be good if column_definitions is
+          # implemented in ruby
           field
         end
 

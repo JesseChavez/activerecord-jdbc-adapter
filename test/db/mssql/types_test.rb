@@ -6,11 +6,11 @@ class MSSQLDateTimeTypesTest < Test::Unit::TestCase
   TABLE_DEFINITION = "CREATE TABLE date_and_times " <<
     "( [id] int NOT NULL IDENTITY(1, 1) PRIMARY KEY, [datetime] DATETIME )"
 
-  @@default_timezone = ActiveRecord::Base.default_timezone
+  @@default_timezone = ActiveRecord.default_timezone
 
   def self.startup
     super
-    ActiveRecord::Base.default_timezone = :local
+    ActiveRecord.default_timezone = :local
     ActiveRecord::Base.connection.execute TABLE_DEFINITION
     # ActiveRecord::Base.logger.level = Logger::DEBUG
   end
@@ -18,7 +18,7 @@ class MSSQLDateTimeTypesTest < Test::Unit::TestCase
   def self.shutdown
     # ActiveRecord::Base.logger.level = Logger::WARN
     ActiveRecord::Base.connection.execute "DROP TABLE date_and_times"
-    ActiveRecord::Base.default_timezone = @@default_timezone
+    ActiveRecord.default_timezone = @@default_timezone
     super
   end
 
@@ -29,12 +29,12 @@ class MSSQLDateTimeTypesTest < Test::Unit::TestCase
     datetime = DateTime.parse('2012-12-21T21:11:01').to_time
     model = DateAndTime.create! :datetime => datetime
     assert_datetime_equal datetime, model.reload.datetime
-  end if ar_version('3.0')
+  end
 
   def test_datetime_with_zone
     time_zone = false
-    default_timezone = ActiveRecord::Base.default_timezone
-    ActiveRecord::Base.default_timezone = :local
+    default_timezone = ActiveRecord.default_timezone
+    ActiveRecord.default_timezone = :local
     time_zone = Time.zone
     Time.zone = 'CET'
 
@@ -42,9 +42,9 @@ class MSSQLDateTimeTypesTest < Test::Unit::TestCase
     model = DateAndTime.create! :datetime => time
     assert_equal time, model.reload.datetime
   ensure
-    ActiveRecord::Base.default_timezone = default_timezone
+    ActiveRecord.default_timezone = default_timezone
     Time.zone = time_zone unless time_zone == false
-  end if ar_version('3.0')
+  end
 
   if defined? JRUBY_VERSION && ActiveRecord::Base.connection.sqlserver_version >= '2008'
 
@@ -79,14 +79,14 @@ class MSSQLDateTimeTypesTest < Test::Unit::TestCase
         model = DateAndTime.create! :datetime2 => datetime
         assert_datetime_equal datetime, model.reload.datetime2
       end
-    end if ar_version('3.0')
+    end
 
     def test_datetime25
       datetime = Time.local(1982, 7, 13, 02, 24, 56, 123000)
       model = DateAndTime.create! :datetime25 => datetime
       assert_not_nil model.datetime25
       assert_datetime_equal datetime, model.reload.datetime25
-      assert_equal datetime.usec, model.datetime25.usec if ar_version('3.2')
+      assert_equal datetime.usec, model.datetime25.usec
     end
 
     def test_smalldatetime

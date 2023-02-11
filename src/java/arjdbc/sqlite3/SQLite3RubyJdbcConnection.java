@@ -402,6 +402,11 @@ public class SQLite3RubyJdbcConnection extends RubyJdbcConnection {
         finally { close(statement); }
     }
 
+    @JRubyMethod
+    public IRubyObject filename(ThreadContext context) {
+        return getConfigValue(context, "database");
+    }
+
     @Override
     @JRubyMethod(name = "rollback_savepoint", required = 1)
     public IRubyObject rollback_savepoint(final ThreadContext context, final IRubyObject name) {
@@ -458,6 +463,34 @@ public class SQLite3RubyJdbcConnection extends RubyJdbcConnection {
     public IRubyObject readonly_p(final ThreadContext context) throws SQLException {
         final Connection connection = getConnection(true);
         return context.runtime.newBoolean(connection.isReadOnly());
+    }
+
+    // note: sqlite3 cext uses this same method but we do not combine all our statements
+    // into a single ; delimited string but leave it as an array of statements.  This is
+    // because the JDBC way of handling batches is to use addBatch().
+    @JRubyMethod(name = "execute_batch2")
+    public IRubyObject execute_batch2(ThreadContext context, IRubyObject statementsArg) {
+        // Assume we will only call this with an array.
+        final RubyArray statements = (RubyArray) statementsArg;
+        return withConnection(context, connection -> {
+            Statement statement = null;
+            try {
+                statement = createStatement(context, connection);
+
+                int length = statements.getLength();
+                for (int i = 0; i < length; i++) {
+                    statement.addBatch(sqlString(statements.eltOk(i)));
+                }
+                statement.executeBatch();
+                return context.nil;
+            } catch (final SQLException e) {
+                // Generate list semicolon list of statements which should match AR error formatting more.
+                debugErrorSQL(context, sqlString(statements.join(context, context.runtime.newString(";\n"))));
+                throw e;
+            } finally {
+                close(statement);
+            }
+        });
     }
 
     @Override

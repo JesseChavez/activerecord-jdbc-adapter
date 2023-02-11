@@ -4,8 +4,30 @@ module ActiveRecord
   module ConnectionAdapters
     module MSSQL
       module Quoting
-        QUOTED_TRUE  = '1'.freeze
-        QUOTED_FALSE = '0'.freeze
+        QUOTED_TRUE  = '1'
+        QUOTED_FALSE = '0'
+
+        def quote(value)
+          # FIXME: this needs improvements to handle other custom types.
+          # Also check if it's possible insert integer into a NVARCHAR
+          case value
+          when ActiveRecord::Type::Binary::Data
+            "0x#{value.hex}"
+          # when SomeOtherBinaryData then BLOB_VALUE_MARKER
+          # when SomeOtherData then "yyy"
+          when String, ActiveSupport::Multibyte::Chars
+            "N'#{quote_string(value)}'"
+          # when OnlyTimeType then "'#{quoted_time(value)}'"
+          when Date, Time
+            "'#{quoted_date(value)}'"
+          when TrueClass
+            quoted_true
+          when FalseClass
+            quoted_false
+          else
+            super
+          end
+        end
 
         # Quote date/time values for use in SQL input, includes microseconds
         # with three digits only if the value is a Time responding to usec.
@@ -15,7 +37,7 @@ module ActiveRecord
             value = time_with_db_timezone(value)
           end
 
-          result = value.to_s(:db)
+          result = value.to_fs(:db)
 
           if value.respond_to?(:usec) && value.usec > 0
             "#{result}.#{sprintf("%06d", value.usec)}"
@@ -105,7 +127,7 @@ module ActiveRecord
         private
 
         def time_with_db_timezone(value)
-          zone_conv_method = if ActiveRecord::Base.default_timezone == :utc
+          zone_conv_method = if ActiveRecord.default_timezone == :utc
                                :getutc
                              else
                                :getlocal
@@ -115,29 +137,6 @@ module ActiveRecord
             value = value.send(zone_conv_method)
           else
             value
-          end
-        end
-
-        # @override
-        # FIXME: it need to be improved to handle other custom types.
-        # Also check if it's possible insert integer into a NVARCHAR
-        def _quote(value)
-          case value
-          when ActiveRecord::Type::Binary::Data
-            "0x#{value.hex}"
-          # when SomeOtherBinaryData then BLOB_VALUE_MARKER
-          # when SomeOtherData then "yyy"
-          when String, ActiveSupport::Multibyte::Chars
-            "N'#{quote_string(value)}'"
-          # when OnlyTimeType then "'#{quoted_time(value)}'"
-          when Date, Time
-            "'#{quoted_date(value)}'"
-          when TrueClass
-            quoted_true
-          when FalseClass
-            quoted_false
-          else
-            super
           end
         end
       end

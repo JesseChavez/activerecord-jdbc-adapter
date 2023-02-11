@@ -2,6 +2,8 @@ require 'test_helper'
 require 'db/mssql'
 
 class MSSQLMultibyteTest < Test::Unit::TestCase
+  # include MultibyteTestMethods
+
   class CreateMultibyteEntries < ActiveRecord::Migration[6.0]
     def self.up
       create_table 'multibyte_entries', force: true do |t|
@@ -33,11 +35,21 @@ class MSSQLMultibyteTest < Test::Unit::TestCase
 
   def test_select_multibyte_string
     MultibyteEntry.create!(title: 'テスト', content: '本文')
-
     entry = MultibyteEntry.last
+
     assert_equal 'テスト', entry.title
     assert_equal '本文', entry.content
     assert_equal entry, MultibyteEntry.find_by_title('テスト')
+  end
+
+  def test_select_multibyte_string_raw_insert
+    skip 'No sure how to do raw insert chinese or japanese chars'
+    MultibyteEntry.connection.execute("insert into multibyte_entries (id, title, content) values (1, 'テスト', '本文')")
+
+    entry = MultibyteEntry.first
+    assert_equal 'テスト', entry.title
+    assert_equal '本文', entry.content
+    assert_equal entry, Entry.find_by_title('テスト')
   end
 
   def test_select2_multibyte_string
@@ -68,7 +80,7 @@ class MSSQLMultibyteTest < Test::Unit::TestCase
     sql = "SELECT title AS #{quoted_alias} FROM multibyte_entries"
     records = MultibyteEntry.connection.select_all(sql)
     records.each do |rec|
-      rec.keys.each do |key|
+      rec.each_key do |key|
         assert_equal str, key
       end
     end

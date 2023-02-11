@@ -10,6 +10,7 @@ require "active_record/connection_adapters/abstract_adapter"
 require "active_record/connection_adapters/statement_pool"
 require "active_record/connection_adapters/sqlite3/explain_pretty_printer"
 require "active_record/connection_adapters/sqlite3/quoting"
+require "active_record/connection_adapters/sqlite3/database_statements"
 require "active_record/connection_adapters/sqlite3/schema_creation"
 require "active_record/connection_adapters/sqlite3/schema_definitions"
 require "active_record/connection_adapters/sqlite3/schema_dumper"
@@ -64,6 +65,7 @@ module ArJdbc
     # DIFFERENCE: FQN
     include ::ActiveRecord::ConnectionAdapters::SQLite3::Quoting
     include ::ActiveRecord::ConnectionAdapters::SQLite3::SchemaStatements
+    include ::ActiveRecord::ConnectionAdapters::SQLite3::DatabaseStatements
 
     NATIVE_DATABASE_TYPES = {
         primary_key:  "integer PRIMARY KEY AUTOINCREMENT NOT NULL",
@@ -79,13 +81,28 @@ module ArJdbc
         boolean:      { name: "boolean" },
         json:         { name: "json" },
     }
-
-    # DIFFERENCE: class_attribute in original adapter is moved down to our section which is a class
-    #  since we cannot define it here in the module (original source this is a class).
+    
+    class StatementPool < ConnectionAdapters::StatementPool # :nodoc:
+      private
+      def dealloc(stmt)
+        stmt.close unless stmt.closed?
+      end
+    end
 
     def initialize(connection, logger, connection_options, config)
+      @memory_database = config[:database] == ":memory:"
       super(connection, logger, config)
       configure_connection
+    end
+
+    def self.database_exists?(config)
+      config = config.symbolize_keys
+      if config[:database] == ":memory:"
+        true
+      else
+        database_file = defined?(Rails.root) ? File.expand_path(config[:database], Rails.root) : config[:database]
+        File.exist?(database_file)
+      end
     end
 
     def supports_ddl_transactions?
@@ -101,7 +118,7 @@ module ArJdbc
     end
 
     def supports_partial_index?
-      database_version >= "3.9.0"
+      true
     end
 
     def supports_expression_index?
@@ -144,6 +161,25 @@ module ArJdbc
     alias supports_insert_conflict_target? supports_insert_on_conflict?
 
     # DIFFERENCE: active?, reconnect!, disconnect! handles by arjdbc core
+    def supports_concurrent_connections?
+      !@memory_database
+    end
+
+    def active?
+      !@raw_connection.closed?
+    end
+
+    def reconnect!
+      super
+      connect if @connection.closed?
+    end
+
+    # Disconnects from the database if already connected. Otherwise, this
+    # method does nothing.
+    def disconnect!
+      super
+      @connection.close rescue nil
+    end
 
     def supports_index_sort_order?
       true
@@ -182,48 +218,8 @@ module ArJdbc
       end
     end
 
-    #--
-    # DATABASE STATEMENTS ======================================
-    #++
-
-    READ_QUERY = ActiveRecord::ConnectionAdapters::AbstractAdapter.build_read_query_regexp(
-      :pragma
-    ) # :nodoc:
-    private_constant :READ_QUERY
-
-    def write_query?(sql) # :nodoc:
-      !READ_QUERY.match?(sql)
-    end
-
-    def explain(arel, binds = [])
-      sql = "EXPLAIN QUERY PLAN #{to_sql(arel, binds)}"
-      # DIFFERENCE: FQN
-      ::ActiveRecord::ConnectionAdapters::SQLite3::ExplainPrettyPrinter.new.pp(exec_query(sql, "EXPLAIN", []))
-    end
-
-    # DIFFERENCE: implemented in ArJdbc::Abstract::DatabaseStatements
-    #def exec_query(sql, name = nil, binds = [], prepare: false)
-
-    # DIFFERENCE: implemented in ArJdbc::Abstract::DatabaseStatements
-    #def exec_delete(sql, name = "SQL", binds = [])
-
-    def last_inserted_id(result)
-      @connection.last_insert_row_id
-    end
-
-    # DIFFERENCE: implemented in ArJdbc::Abstract::DatabaseStatements
-    #def execute(sql, name = nil) #:nodoc:
-
-    def begin_db_transaction #:nodoc:
-      log("begin transaction", 'TRANSACTION') { @connection.transaction }
-    end
-
-    def commit_db_transaction #:nodoc:
-      log("commit transaction", 'TRANSACTION') { @connection.commit }
-    end
-
-    def exec_rollback_db_transaction #:nodoc:
-      log("rollback transaction", 'TRANSACTION') { @connection.rollback }
+    def all_foreign_keys_valid? # :nodoc:
+      execute("PRAGMA foreign_key_check").blank?
     end
 
     # SCHEMA STATEMENTS ========================================
@@ -233,14 +229,15 @@ module ArJdbc
       pks.sort_by { |f| f["pk"] }.map { |f| f["name"] }
     end
 
-      def remove_index(table_name, column_name = nil, **options) # :nodoc:
-        return if options[:if_exists] && !index_exists?(table_name, column_name, **options)
+    def remove_index(table_name, column_name = nil, **options) # :nodoc:
+      return if options[:if_exists] && !index_exists?(table_name, column_name, **options)
 
       index_name = index_name_for_remove(table_name, column_name, options)
 
       exec_query "DROP INDEX #{quote_column_name(index_name)}"
     end
 
+    
     # Renames a table.
     #
     # Example:
@@ -265,9 +262,17 @@ module ArJdbc
     def remove_column(table_name, column_name, type = nil, **options) #:nodoc:
       alter_table(table_name) do |definition|
         definition.remove_column column_name
-        definition.foreign_keys.delete_if do |_, fk_options|
-          fk_options[:column] == column_name.to_s
+        definition.foreign_keys.delete_if { |fk| fk.column == column_name.to_s }
+      end
+    end
+
+    def remove_columns(table_name, *column_names, type: nil, **options) # :nodoc:
+      alter_table(table_name) do |definition|
+        column_names.each do |column_name|
+          definition.remove_column column_name
         end
+        column_names = column_names.map(&:to_s)
+        definition.foreign_keys.delete_if { |fk| column_names.include?(fk.column) }
       end
     end
 
@@ -291,8 +296,8 @@ module ArJdbc
     def change_column(table_name, column_name, type, **options) #:nodoc:
       alter_table(table_name) do |definition|
         definition[column_name].instance_eval do
-          self.type    = type
-            self.options.merge!(options)
+          self.type = aliased_types(type.to_s, type)
+          self.options.merge!(options)
         end
       end
     end
@@ -322,18 +327,6 @@ module ArJdbc
       end
     end
 
-    def insert_fixtures_set(fixture_set, tables_to_delete = [])
-      disable_referential_integrity do
-        transaction(requires_new: true) do
-          tables_to_delete.each { |table| delete "DELETE FROM #{quote_table_name(table)}", "Fixture Delete" }
-
-          fixture_set.each do |table_name, rows|
-            rows.each { |row| insert_fixture(row, table_name) }
-          end
-        end
-      end
-    end
-
     def build_insert_sql(insert) # :nodoc:
       sql = +"INSERT #{insert.into} #{insert.values_list}"
 
@@ -341,23 +334,23 @@ module ArJdbc
         sql << " ON CONFLICT #{insert.conflict_target} DO NOTHING"
       elsif insert.update_duplicates?
         sql << " ON CONFLICT #{insert.conflict_target} DO UPDATE SET "
-        sql << insert.touch_model_timestamps_unless { |column| "#{column} IS excluded.#{column}" }
-        sql << insert.updatable_columns.map { |column| "#{column}=excluded.#{column}" }.join(",")
+        if insert.raw_update_sql?
+          sql << insert.raw_update_sql
+        else
+          sql << insert.touch_model_timestamps_unless { |column| "#{column} IS excluded.#{column}" }
+          sql << insert.updatable_columns.map { |column| "#{column}=excluded.#{column}" }.join(",")
+        end
       end
 
       sql
     end
 
-    def shared_cache?
-      config[:properties] && config[:properties][:shared_cache] == true
+    def shared_cache? # :nodoc:
+      @config.fetch(:flags, 0).anybits?(::SQLite3::Constants::Open::SHAREDCACHE)
     end
 
     def get_database_version # :nodoc:
-      SQLite3Adapter::Version.new(query_value("SELECT sqlite_version(*)"))
-    end
-
-    def build_truncate_statement(table_name)
-      "DELETE FROM #{quote_table_name(table_name)}"
+      SQLite3Adapter::Version.new(query_value("SELECT sqlite_version(*)", "SCHEMA"))
     end
 
     def check_version
@@ -379,6 +372,34 @@ module ArJdbc
       table_structure_with_collation(table_name, structure)
     end
     alias column_definitions table_structure
+
+    def extract_value_from_default(default)
+      case default
+      when /^null$/i
+        nil
+        # Quoted types
+      when /^'(.*)'$/m
+        $1.gsub("''", "'")
+        # Quoted types
+      when /^"(.*)"$/m
+        $1.gsub('""', '"')
+        # Numeric types
+      when /\A-?\d+(\.\d*)?\z/
+        $&
+      else
+        # Anything else is blank or some function
+        # and we can't know the value of that, so return nil.
+        nil
+      end
+    end
+
+    def extract_default_function(default_value, default)
+      default if has_default_function?(default_value, default)
+    end
+
+    def has_default_function?(default_value, default)
+      !default_value && %r{\w+\(.*\)|CURRENT_TIME|CURRENT_DATE|CURRENT_TIMESTAMP}.match?(default)
+    end
 
     # See: https://www.sqlite.org/lang_altertable.html
     # SQLite has an additional restriction on the ALTER TABLE statement
@@ -440,8 +461,13 @@ module ArJdbc
              options[:rename][column.name.to_sym] ||
              column.name) : column.name
 
+          if column.has_default?
+            type = lookup_cast_type_from_column(column)
+            default = type.deserialize(column.default)
+          end
+
           @definition.column(column_name, column.type,
-            limit: column.limit, default: column.default,
+            limit: column.limit, default: default,
             precision: column.precision, scale: column.scale,
             null: column.null, collation: column.collation,
             primary_key: column_name == from_primary_key
@@ -459,9 +485,6 @@ module ArJdbc
     def copy_table_indexes(from, to, rename = {})
       indexes(from).each do |index|
         name = index.name
-        # indexes sqlite creates for internal use start with `sqlite_` and
-        # don't need to be copied
-        next if name.start_with?("sqlite_")
         if to == "a#{from}"
           name = "t#{name}"
         elsif from == "a#{to}"
@@ -481,6 +504,7 @@ module ArJdbc
           options = { name: name.gsub(/(^|_)(#{from})_/, "\\1#{to}_"), internal: true }
           options[:unique] = true if index.unique
           options[:where] = index.where if index.where
+          options[:order] = index.orders if index.orders
           add_index(to, columns, **options)
         end
       end
@@ -500,20 +524,22 @@ module ArJdbc
     end
 
     def translate_exception(exception, message:, sql:, binds:)
-      case exception.message
       # SQLite 3.8.2 returns a newly formatted error message:
       #   UNIQUE constraint failed: *table_name*.*column_name*
       # Older versions of SQLite return:
       #   column *column_name* is not unique
-      when /column(s)? .* (is|are) not unique/, /UNIQUE constraint failed: .*/
+      if exception.message.match?(/(column(s)? .* (is|are) not unique|UNIQUE constraint failed: .*)/i)
         # DIFFERENCE: FQN
         ::ActiveRecord::RecordNotUnique.new(message, sql: sql, binds: binds)
-      when /.* may not be NULL/, /NOT NULL constraint failed: .*/
+      elsif exception.message.match?(/(.* may not be NULL|NOT NULL constraint failed: .*)/i)
         # DIFFERENCE: FQN
         ::ActiveRecord::NotNullViolation.new(message, sql: sql, binds: binds)
-      when /FOREIGN KEY constraint failed/i
+      elsif exception.message.match?(/FOREIGN KEY constraint failed/i)
         # DIFFERENCE: FQN
         ::ActiveRecord::InvalidForeignKey.new(message, sql: sql, binds: binds)
+      elsif exception.message.match?(/called on a closed database/i)
+        # DIFFERENCE: FQN
+        ::ActiveRecord::ConnectionNotEstablished.new(exception)
       else
         super
       end
@@ -533,12 +559,12 @@ module ArJdbc
       # Result will have following sample string
       # CREATE TABLE "users" ("id" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
       #                       "password_digest" varchar COLLATE "NOCASE");
-      result = exec_query(sql, "SCHEMA").first
+      result = query_value(sql, "SCHEMA")
 
       if result
         # Splitting with left parentheses and discarding the first part will return all
         # columns separated with comma(,).
-        columns_string = result["sql"].split("(", 2).last
+        columns_string = result.split("(", 2).last
 
         columns_string.split(",").each do |column_string|
           # This regex will match the column name and collation type and will save
@@ -564,7 +590,21 @@ module ArJdbc
       Arel::Visitors::SQLite.new(self)
     end
 
+    def build_statement_pool
+      StatementPool.new(self.class.type_cast_config_to_integer(@config[:statement_limit]))
+    end
+
+    def connect
+      @connection = ::SQLite3::Database.new(
+        @config[:database].to_s,
+        @config.merge(results_as_hash: true)
+      )
+    end
+
     def configure_connection
+      # FIXME: missing from adapter
+#      @connection.busy_timeout(self.class.type_cast_config_to_integer(@config[:timeout])) if @config[:timeout]
+
       execute("PRAGMA foreign_keys = ON", "SCHEMA")
     end
 
@@ -720,11 +760,15 @@ module ActiveRecord::ConnectionAdapters
 
     # because the JDBC driver doesn't like multiple SQL statements in one JDBC statement
     def combine_multi_statements(total_sql)
-      if total_sql.length == 1
-        total_sql.first
-      else
-        total_sql
-      end
+      total_sql
+    end
+
+    # combine
+    def write_query?(sql) # :nodoc:
+      return sql.any? { |stmt| super(stmt) } if sql.kind_of? Array
+      !READ_QUERY.match?(sql)
+    rescue ArgumentError # Invalid encoding
+      !READ_QUERY.match?(sql.b)
     end
 
     def initialize_type_map(m = type_map)

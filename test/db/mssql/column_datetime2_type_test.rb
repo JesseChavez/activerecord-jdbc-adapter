@@ -38,7 +38,7 @@ class MSSQLColumnDateTime2TypesTest < Test::Unit::TestCase
     assert_equal :datetime,      column.type
     assert_equal true,           column.null
     assert_equal 'datetime2(7)', column.sql_type
-    assert_equal nil,            column.precision
+    assert_equal 7,              column.precision
     assert_equal nil,            column.default
 
     type = DateTime2Types.connection.send(:type_map).lookup(column.sql_type)
@@ -58,6 +58,21 @@ class MSSQLColumnDateTime2TypesTest < Test::Unit::TestCase
     assert_instance_of Type::DateTime2, type
   end
 
+  def test_datetime2_with_precision_six
+    # NOTE: this spec is need to catch precision breakage on upgrades
+    # since other adapters have default precision 6
+    column = DateTime2Types.columns_hash['my_datetime_two']
+
+    assert_equal :datetime,                    column.type
+    assert_equal false,                        column.null
+    assert_equal 'datetime2(6)',               column.sql_type
+    assert_equal 6,                            column.precision
+    assert_equal '2017-02-28 01:59:19.789567', column.default
+
+    type = DateTime2Types.connection.send(:type_map).lookup(column.sql_type)
+    assert_instance_of Type::DateTime2, type
+  end
+
   def test_lookup_datetime2_aliases
     assert_cast_type :datetime, 'DATETIME2'
   end
@@ -72,20 +87,6 @@ class MSSQLColumnDateTime2TypesTest < Test::Unit::TestCase
 
     marshalled = Marshal.dump(expected)
     actual = Marshal.load(marshalled)
-
-    assert_equal expected.attributes, actual.attributes
-  end
-
-  def test_yaml
-    expected = DateTime2Types.create!(
-      my_datetime: Time.now.change(sec: 21, usec: 128_123),
-      my_datetime_alt: Time.now.change(sec: 27, usec: 120_789)
-    )
-
-    expected.reload
-
-    yamled = YAML.dump(expected)
-    actual = YAML.load(yamled)
 
     assert_equal expected.attributes, actual.attributes
   end

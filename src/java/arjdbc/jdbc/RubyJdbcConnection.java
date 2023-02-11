@@ -720,6 +720,21 @@ public class RubyJdbcConnection extends RubyObject {
         }
     }
 
+    @JRubyMethod(name = "closed?")
+    public IRubyObject closed_p(ThreadContext context) {
+        try {
+            final Connection connection = getConnectionInternal(false);
+
+            if (connection == null) return context.fals;
+
+            // NOTE: isClosed method generally cannot be called to determine
+            // whether a connection to a database is valid or invalid ...
+            return context.runtime.newBoolean(connection.isClosed());
+        } catch (SQLException e) {
+            return handleException(context, e);
+        }
+    }
+
     @JRubyMethod(name = "close")
     public IRubyObject close(final ThreadContext context) {
         final Connection connection = getConnection(false);
@@ -2642,8 +2657,8 @@ public class RubyJdbcConnection extends RubyObject {
     }
 
     private String default_timezone(final ThreadContext context) {
-        final RubyClass base = getBase(context.runtime);
-        return default_timezone.call(context, base, base).asJavaString(); // :utc (or :local)
+        final RubyModule activeRecord = ActiveRecord(context);
+        return default_timezone.call(context, activeRecord, activeRecord).asJavaString(); // :utc (or :local)
     }
 
     // ActiveRecord::Base.default_timezone

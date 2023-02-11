@@ -34,7 +34,7 @@ module ArJdbc
         raw_connection.jdbc_connection(unwrap)
       end
 
-      protected
+      private
 
       def translate_exception_class(e, sql, binds)
         message = "#{e.class.name}: #{e.message}"
@@ -42,16 +42,19 @@ module ArJdbc
         exception = translate_exception(
           e, message: message, sql: sql, binds: binds
         )
-        exception.set_backtrace e.backtrace
+        exception.set_backtrace e.backtrace unless exception.equal?(e)
         exception
       end
+
+      Throwable = java.lang.Throwable
+      private_constant :Throwable
 
       def translate_exception(exception, message:, sql:, binds:)
         # override in derived class
 
         # we shall not translate native "Java" exceptions as they might
         # swallow an ArJdbc / driver bug into an AR::StatementInvalid !
-        return exception if exception.is_a?(Java::JavaLang::Throwable)
+        return exception if exception.is_a?(Throwable)
 
         case exception
           when SystemExit, SignalException, NoMemoryError then exception
@@ -61,14 +64,10 @@ module ArJdbc
         end
       end
 
-      def extract_raw_bind_values(binds)
-        binds.map(&:value_for_database)
-      end
-
       # this version of log() automatically fills type_casted_binds from binds if necessary
-      def log(sql, name = "SQL", binds = [], type_casted_binds = [], statement_name = nil)
+      def log(sql, name = "SQL", binds = [], type_casted_binds = [], statement_name = nil, async: false)
         if binds.any? && (type_casted_binds.nil? || type_casted_binds.empty?)
-          type_casted_binds = ->{ extract_raw_bind_values(binds) }
+          type_casted_binds = ->{ binds.map(&:value_for_database) } # extract_raw_bind_values
         end
         super
       end

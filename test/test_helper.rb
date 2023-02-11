@@ -76,15 +76,6 @@ class Test::Unit::TestCase
     end
   end
 
-  def self.ar_version(version)
-    match = version.match(/(\d+)\.(\d+)(?:\.(\d+))?/)
-    ActiveRecord::VERSION::MAJOR > match[1].to_i ||
-      (ActiveRecord::VERSION::MAJOR == match[1].to_i &&
-       ActiveRecord::VERSION::MINOR >= match[2].to_i)
-  end
-
-  def ar_version(version); self.class.ar_version(version); end
-
   def self.jruby?; !! defined?(JRUBY_VERSION) end
   def jruby?; self.class.jruby? end
 
@@ -171,11 +162,7 @@ class Test::Unit::TestCase
   end
 
   def self.current_connection_config
-    if ActiveRecord::Base.respond_to?(:connection_config)
-      ActiveRecord::Base.connection_db_config.configuration_hash
-    else
-      ActiveRecord::Base.connection_pool.spec.config
-    end
+    ActiveRecord::Base.connection.pool.db_config.configuration_hash
   end
 
   def current_connection_config; self.class.current_connection_config; end
@@ -304,12 +291,12 @@ class Test::Unit::TestCase
   end
 
   def with_default_timezone(default = nil)
-    prev_tz = ActiveRecord::Base.default_timezone
+    prev_tz = ActiveRecord.default_timezone
     begin
-      ActiveRecord::Base.default_timezone = default
+      ActiveRecord.default_timezone = default
       yield
     ensure
-      ActiveRecord::Base.default_timezone = prev_tz
+      ActiveRecord.default_timezone = prev_tz
     end
   end
 
@@ -355,13 +342,13 @@ class Test::Unit::TestCase
   def with_timezone_config(cfg)
     verify_default_timezone_config
 
-    old_default_zone = ActiveRecord::Base.default_timezone
+    old_default_zone = ActiveRecord.default_timezone
     old_awareness = ActiveRecord::Base.time_zone_aware_attributes
     old_zone = Time.zone
 
     begin
       if cfg.has_key?(:default)
-        ActiveRecord::Base.default_timezone = cfg[:default]
+        ActiveRecord.default_timezone = cfg[:default]
       end
       if cfg.has_key?(:aware_attributes)
         ActiveRecord::Base.time_zone_aware_attributes = cfg[:aware_attributes]
@@ -372,7 +359,7 @@ class Test::Unit::TestCase
 
       yield
     ensure
-      ActiveRecord::Base.default_timezone = old_default_zone
+      ActiveRecord.default_timezone = old_default_zone
       ActiveRecord::Base.time_zone_aware_attributes = old_awareness
       Time.zone = old_zone
     end
@@ -391,12 +378,12 @@ class Test::Unit::TestCase
       Got: #{Time.zone.inspect}
       MSG
     end
-    if ActiveRecord::Base.default_timezone != expected_default_timezone
+    if ActiveRecord.default_timezone != expected_default_timezone
       $stderr.puts <<-MSG
 \n#{self}
-    Global state `ActiveRecord::Base.default_timezone` was leaked.
+    Global state `ActiveRecord.default_timezone` was leaked.
       Expected: #{expected_default_timezone.inspect}
-      Got: #{ActiveRecord::Base.default_timezone.inspect}
+      Got: #{ActiveRecord.default_timezone.inspect}
       MSG
     end
     if ActiveRecord::Base.time_zone_aware_attributes != EXPECTED_TIME_ZONE_AWARE_ATTRIBUTES

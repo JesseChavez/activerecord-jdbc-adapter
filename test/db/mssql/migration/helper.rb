@@ -20,6 +20,7 @@ module MSSQLMigration
       remove_reference
       remove_references
       remove_belongs_to
+      change_table
     ].freeze
 
     class CreateColumnModifications< ActiveRecord::Migration[6.0]

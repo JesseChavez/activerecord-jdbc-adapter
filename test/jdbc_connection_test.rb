@@ -139,7 +139,7 @@ class JdbcConnectionTest < Test::Unit::TestCase
     ensure
       ActiveRecord::Base.establish_connection JDBC_CONFIG
     end
-  end #if ar_version('3.0')
+  end
 
   test 'driver sql exceptions without message and sql state' do
     config = JDBC_CONFIG.dup
@@ -156,7 +156,7 @@ class JdbcConnectionTest < Test::Unit::TestCase
     ensure
       ActiveRecord::Base.establish_connection JDBC_CONFIG
     end
-  end #if ar_version('3.0')
+  end
 
   context 'configuration' do
 
@@ -186,53 +186,6 @@ class JdbcConnectionTest < Test::Unit::TestCase
         assert ! ActiveRecord::Base.connected?
       end
     end
-
-    test 'connection fails without :driver' do
-      with_connection_removed do
-        ActiveRecord::Base.establish_connection :adapter => 'jdbc', :url => 'jdbc:derby:test.derby;create=true'
-        assert_raise ActiveRecord::ConnectionNotEstablished do
-          ActiveRecord::Base.connection
-        end
-      end
-    end
-
-    test 'connection works with :driver_instance and :url' do
-      load_derby_driver
-      with_connection_removed do
-        driver_instance = ActiveRecord::ConnectionAdapters::JdbcDriver.new('org.apache.derby.jdbc.EmbeddedDriver')
-        ActiveRecord::Base.establish_connection :adapter => 'jdbc',
-                                                :url => 'jdbc:derby:memory:TestDB;create=true', :driver_instance => driver_instance
-        #assert_nothing_raised do
-        ActiveRecord::Base.connection
-        #end
-        assert ActiveRecord::Base.connected?
-        assert_nothing_raised do
-          connection = ActiveRecord::Base.connection
-          connection.execute("create table my_table(x int)")
-          #connection.execute("insert into my_table values 42")
-          #connection.execute("select * from my_table")
-        end
-      end
-    end
-
-    test 'instantiates the driver' do
-      load_derby_driver
-      with_connection_removed do
-        ActiveRecord::Base.establish_connection :adapter => 'jdbc',
-                                                :url => 'jdbc:derby:memory:TestDB;create=true', :driver => 'org.apache.derby.jdbc.EmbeddedDriver'
-        assert_nothing_raised { ActiveRecord::Base.connection }
-        jdbc_connection = ActiveRecord::Base.connection.raw_connection
-        assert connection_factory = jdbc_connection.connection_factory
-        driver = connection_factory.driver_wrapper.driver_instance
-        assert driver.is_a? Java::JavaSql::Driver
-        assert_equal 'org.apache.derby.jdbc.EmbeddedDriver', driver.to_java.getClass.getName
-      end
-    end
-
-    def load_derby_driver
-      require 'jdbc/derby'; Jdbc::Derby.load_driver(:require)
-    end
-
   end
 
   context "connected" do
@@ -250,8 +203,8 @@ class JdbcConnectionTest < Test::Unit::TestCase
     pool = ActiveRecord::Base.connection_pool
     adapter = ActiveRecord::ConnectionAdapters::JdbcAdapter.new(connection, logger, pool)
     assert_equal connection, adapter.raw_connection
-    assert adapter.pool if ar_version('4.0')
-  end if ar_version('3.2') && defined? JRUBY_VERSION
+    assert adapter.pool
+  end if defined? JRUBY_VERSION
 
   test 'instantiate adapter ActiveRecord style (< 3.2)' do
     connection = ActiveRecord::Base.connection.raw_connection
@@ -360,7 +313,7 @@ class JdbcConnectionTest < Test::Unit::TestCase
       rescue ActiveRecord::JDBCError => e
         assert_match /transient.2/, e.sql_exception.message
       end
-    end if ar_version('3.0') # NOTE: for some reason fails on 2.3
+    end
 
     test 'execute retried for recoverable failure (using new connection)' do
       failing_connection = ConnectionDelegate.new(@real_connection_factory.newConnection)

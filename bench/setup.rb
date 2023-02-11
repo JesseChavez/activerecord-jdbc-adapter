@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 
-require 'rubygems' unless defined? Gem
+require 'benchmark/ips'
 
 if ENV['RAILS']  # Use local clone of Rails
   rails_dir = ENV['RAILS']
@@ -62,7 +62,7 @@ ActiveRecord::Base.establish_connection(config)
 
 unless ( level = ENV['AR_LOGGER'] || '' ).empty?; require 'logger'
 logger = Logger.new File.expand_path('../active_record.log', __FILE__)
-level = %(DEBUG INFO WARN ERROR FATAL).detect { |s| level.upcase.index(s) }
+level = %w(DEBUG INFO WARN ERROR FATAL).detect { |s| level.upcase.index(s) }
 logger.level = Logger.const_get(level) if level
 logger.silencer = false if logger.respond_to?(:silencer)
 ActiveRecord::Base.logger = logger
@@ -117,6 +117,26 @@ module BenchTestHelper
   else
 
     def gc; GC.start end
+
+  end
+
+  class Suite # for Benchmar.ips
+
+    def warming(*)
+      BenchTestHelper.gc
+    end
+
+    def running(*)
+      BenchTestHelper.gc
+    end
+
+    def warmup_stats(*)
+    end
+
+    def add_report(*)
+    end
+
+    INSTANCE = self.new
 
   end
 

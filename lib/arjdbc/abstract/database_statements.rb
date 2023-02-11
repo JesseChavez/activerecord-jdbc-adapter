@@ -30,7 +30,7 @@ module ArJdbc
 
       # It appears that at this point (AR 5.0) "prepare" should only ever be true
       # if prepared statements are enabled
-      def exec_query(sql, name = nil, binds = NO_BINDS, prepare: false)
+      def exec_query(sql, name = nil, binds = NO_BINDS, prepare: false, async: false)
         if preventing_writes? && write_query?(sql)
           raise ActiveRecord::ReadOnlyError, "Write query attempted while in readonly mode: #{sql}"
         end
@@ -69,7 +69,7 @@ module ArJdbc
       end
       alias :exec_delete :exec_update
 
-      def execute(sql, name = nil)
+      def execute(sql, name = nil, async: false)
         if preventing_writes? && write_query?(sql)
           raise ActiveRecord::ReadOnlyError, "Write query attempted while in readonly mode: #{sql}"
         end
@@ -77,11 +77,11 @@ module ArJdbc
         materialize_transactions
         mark_transaction_written_if_write(sql)
 
-        log(sql, name) { @connection.execute(sql) }
+        log(sql, name, async: async) { @connection.execute(sql) }
       end
 
       # overridden to support legacy binds
-      def select_all(arel, name = nil, binds = NO_BINDS, preparable: nil)
+      def select_all(arel, name = nil, binds = NO_BINDS, preparable: nil, async: false)
         binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
         super
       end
