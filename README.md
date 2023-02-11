@@ -37,6 +37,9 @@ end
 
 Or look at the sample rails and see how is set up:
 
+
+- Rails 7.0 sample app [wombat70](https://github.com/JesseChavez/wombat70)
+
 - Rails 6.1 sample app [wombat61](https://github.com/JesseChavez/wombat61)
 
 - Rails 6.0 sample app [wombat60](https://github.com/JesseChavez/wombat60)
