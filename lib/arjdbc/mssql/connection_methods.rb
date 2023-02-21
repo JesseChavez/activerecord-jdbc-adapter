@@ -78,12 +78,15 @@ ArJdbc::ConnectionMethods.module_eval do
       url << "sendTimeAsDatetime=#{config[:send_time_as_datetime] || false};"
       url << "loginTimeout=#{config[:login_timeout].to_i};" if config[:login_timeout]
       url << "lockTimeout=#{config[:lock_timeout].to_i};"
+      url << "encrypt=#{config[:encrypt]};" if config.key?(:encrypt)
+      url << "trustServerCertificate=#{config[:trust_server_certificate]};" if config.key?(:trust_server_certificate)
       app = config[:appname] || config[:application]
       url << "applicationName=#{app};" if app
       isc = config[:integrated_security] # Win only - needs sqljdbc_auth.dll
       url << "integratedSecurity=#{isc};" unless isc.nil?
       url
     end
+
     jdbc_connection(config)
   end
   alias_method :jdbcsqlserver_connection, :sqlserver_connection
