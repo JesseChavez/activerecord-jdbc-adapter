@@ -48,6 +48,7 @@ jobs:
       AR_VERSION: ${{ matrix.ar_version }}
       JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M"
       PREPARED_STATEMENTS: ${{ matrix.prepared_statements }}
+      JDBC_SQLITE_VERSION: "3.32.3.3"
       PGHOST: localhost
       PGPORT: 5432
       PGUSER: postgres
