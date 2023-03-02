@@ -11,6 +11,8 @@ MSSQL_CONFIG = {
   host:     ENV['SQLHOST'] || 'localhost'
 }
 
+MSSQL_CONFIG[:trust_server_certificate] = true
+
 MSSQL_CONFIG[:port] = ENV['SQLPORT'] if ENV['SQLPORT']
 
 unless ( ps = ENV['PREPARED_STATEMENTS'] || ENV['PS'] ).nil?
