@@ -20,6 +20,48 @@ permissions:
   contents: read
 
 jobs:
+  test-arjdbc-mssql:
+
+    name: ARJDBC Tests (mssql)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby-version: ['jruby-head']
+        db: ['mssql']
+        test_targets: ['test_mssql']
+
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        env:
+          MSSQL_SA_PASSWORD: password
+          ACCEPT_EULA: 'Y'
+        ports:
+          - 1433:1433
+
+    env:
+      DB: ${{ matrix.db }}
+      JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M"
+      SQLUSER: SA
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby-version }}
+          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+      - name: Setup database
+        run: |
+          sqlcmd -S localhost -U SA -P password -Q "CREATE DATABASE arjdbc_test"
+      - name: Build
+        run: |
+          rake jar
+      - name: Run tests
+        run: |
+          bundle exec rake ${{ matrix.test_targets }}
+
   test-rails-pgsql:
 
     name: Rails Tests (Postgres)
