@@ -35,15 +35,22 @@ jobs:
       mssql:
         image: mcr.microsoft.com/mssql/server:2019-latest
         env:
-          MSSQL_SA_PASSWORD: password
-          ACCEPT_EULA: 'Y'
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: Password12!
         ports:
           - 1433:1433
+        options: >-
+          --health-cmd="/opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P \"Password12!\" -l 30 -Q \"SELECT 1\""
+          --health-start-period 10s
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
 
     env:
       DB: ${{ matrix.db }}
       JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M"
       SQLUSER: SA
+      SQLPASS: Password12!
 
     steps:
       - uses: actions/checkout@v3
@@ -53,8 +60,7 @@ jobs:
           ruby-version: ${{ matrix.ruby-version }}
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
       - name: Setup database
-        run: |
-          sqlcmd -S localhost -U SA -P password -Q "CREATE DATABASE arjdbc_test"
+        run: /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Password12!" -Q "CREATE DATABASE arjdbc_test;"
       - name: Build
         run: |
           rake jar
