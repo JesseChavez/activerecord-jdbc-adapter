@@ -25,7 +25,7 @@ module ArJdbc
       rescue ActiveRecord::StatementInvalid => e
         case e.message
         when /database .* already exists/i
-          raise ActiveRecord::Tasks::DatabaseAlreadyExists
+          raise ActiveRecord::DatabaseAlreadyExists
         else
           raise
         end
