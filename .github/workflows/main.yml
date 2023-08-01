@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby-version: ['jruby-head']
+        ruby-version: ['jruby-9.4.2.0']
         db: ['mssql']
         test_targets: ['test_mssql']
 
