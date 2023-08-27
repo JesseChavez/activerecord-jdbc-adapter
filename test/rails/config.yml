@@ -127,6 +127,7 @@ connections:
       username: arjdbc
       password: password
       prepared_statements: true
+      trust_server_certificate: true
     arunit2:
       database: jdbc_arunit2
       host: localhost
@@ -134,3 +135,4 @@ connections:
       username: arjdbc
       password: password
       prepared_statements: true
+      trust_server_certificate: true
