@@ -24,7 +24,14 @@ ArJdbc::ConnectionMethods.module_eval do
     port = config[:port] ||= ( ENV['PGPORT'] || 5432 )
     database = config[:database] || config[:dbname] || ENV['PGDATABASE']
 
-    config[:url] ||= "jdbc:postgresql://#{host}:#{port}/#{database}"
+    app = config[:application_name] || config[:appname] || config[:application]
+
+    config[:url] ||= if app
+                       "jdbc:postgresql://#{host}:#{port}/#{database}?ApplicationName=#{app}"
+                     else
+                       "jdbc:postgresql://#{host}:#{port}/#{database}"
+                     end
+
     config[:url] << config[:pg_params] if config[:pg_params]
 
     config[:username] ||= ( config[:user] || ENV['PGUSER'] || ENV_JAVA['user.name'] )

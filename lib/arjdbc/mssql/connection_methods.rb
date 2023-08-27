@@ -80,7 +80,7 @@ ArJdbc::ConnectionMethods.module_eval do
       url << "lockTimeout=#{config[:lock_timeout].to_i};"
       url << "encrypt=#{config[:encrypt]};" if config.key?(:encrypt)
       url << "trustServerCertificate=#{config[:trust_server_certificate]};" if config.key?(:trust_server_certificate)
-      app = config[:appname] || config[:application]
+      app = config[:application_name] || config[:appname] || config[:application]
       url << "applicationName=#{app};" if app
       isc = config[:integrated_security] # Win only - needs sqljdbc_auth.dll
       url << "integratedSecurity=#{isc};" unless isc.nil?
