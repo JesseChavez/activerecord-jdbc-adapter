@@ -472,7 +472,7 @@ module ActiveRecord
       # NOTE: This is ready, all implemented in the java part of adapter,
       # it uses MSSQLColumn, SqlTypeMetadata, etc.
       def column_definitions(table_name)
-       log('JDBC: GETCOLUMNS', 'SCHEMA') { @connection.columns(table_name) }
+       log('JDBC: GETCOLUMNS', 'SCHEMA') { @connection.columns(table_name, nil, default_schema) }
       rescue => e
         # raise translate_exception_class(e, nil)
         # FIXME: this breaks one arjdbc test but fixes activerecord tests
