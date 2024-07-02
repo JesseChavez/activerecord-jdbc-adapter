@@ -51,6 +51,16 @@ module Arel
         end
       end
 
+      # Override the default in arel ToSql class
+      def visit_Arel_Nodes_NullsFirst(o, collector)
+        visit o.expr, collector
+      end
+
+      # Override the default in arel ToSql class
+      def visit_Arel_Nodes_NullsLast(o, collector)
+        visit o.expr, collector
+      end
+
       def visit_Arel_Nodes_Grouping(o, collector)
         remove_invalid_ordering_from_select_statement(o.expr)
         super
