@@ -108,7 +108,7 @@ module Arel
         column_name && t[column_name]
       end
 
-      include ArJdbc::MSSQL::LockMethods
+      # include ArJdbc::MSSQL::LockMethods
 
       include ArJdbc::MSSQL::LimitHelpers::SqlServerReplaceLimitOffset
 
