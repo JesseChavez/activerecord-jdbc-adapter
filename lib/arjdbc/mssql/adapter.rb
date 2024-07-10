@@ -15,6 +15,7 @@ require 'arjdbc/abstract/database_statements'
 require 'arjdbc/abstract/statement_cache'
 require 'arjdbc/abstract/transaction_support'
 
+require 'arjdbc/mssql/utils'
 require 'arjdbc/mssql/column'
 require 'arjdbc/mssql/types'
 require 'arjdbc/mssql/quoting'
@@ -489,15 +490,5 @@ module ActiveRecord
         # NOTE: @statements is set in StatementCache module
       end
     end
-  end
-end
-
-# FIXME: this is not used by the adapter anymore, it is here because
-# it is a dependency of old tests that needs to be reviewed
-module ArJdbc
-  module MSSQL
-    require 'arjdbc/mssql/utils'
-
-    include Utils
   end
 end

@@ -27,32 +27,29 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 module ArJdbc
   module MSSQL
     module Utils
-
-      module_function
-
-      def unquote_table_name(table_name)
+      def self.unquote_table_name(table_name)
         remove_identifier_delimiters(table_name)
       end
 
-      def unquote_column_name(column_name)
+      def self.unquote_column_name(column_name)
         remove_identifier_delimiters(column_name)
       end
 
-      def unquote_string(string)
+      def self.unquote_string(string)
         string.to_s.gsub("''", "'")
       end
 
-      def unqualify_table_name(table_name)
+      def self.unqualify_table_name(table_name)
         return if table_name.blank?
         remove_identifier_delimiters(table_name.to_s.split('.').last)
       end
 
-      def unqualify_table_schema(table_name)
+      def self.unqualify_table_schema(table_name)
         schema_name = table_name.to_s.split('.')[-2]
         schema_name.nil? ? nil : remove_identifier_delimiters(schema_name)
       end
 
-      def unqualify_db_name(table_name)
+      def self.unqualify_db_name(table_name)
         table_names = table_name.to_s.split('.')
         table_names.length == 3 ? remove_identifier_delimiters(table_names.first) : nil
       end
@@ -60,10 +57,9 @@ module ArJdbc
       # private
 
       # See "Delimited Identifiers": http://msdn.microsoft.com/en-us/library/ms176027.aspx
-      def remove_identifier_delimiters(keyword)
+      def self.remove_identifier_delimiters(keyword)
         keyword.to_s.tr("\]\[\"", '')
       end
-
     end
   end
 end
