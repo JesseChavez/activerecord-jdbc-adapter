@@ -497,10 +497,7 @@ end
 module ArJdbc
   module MSSQL
     require 'arjdbc/mssql/utils'
-    require 'arjdbc/mssql/limit_helpers'
-    require 'arjdbc/mssql/lock_methods'
 
-    include LimitHelpers
     include Utils
   end
 end

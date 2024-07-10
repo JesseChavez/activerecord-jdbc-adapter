@@ -132,35 +132,6 @@ class MSSQLUnitTest < Test::Unit::TestCase
     assert_equal "[foo].[bar]", connection.quote_column_name("foo.[bar]")
   end
 
-  test "replace limit offset!" do
-    mod = ArJdbc::MSSQL::LimitHelpers::SqlServerReplaceLimitOffset
-    sql = "SELECT w.*, count(o.object_id) num_objects " <<
-      "FROM [vikings] w inner join long_ships s on s.id = w.long_ship_id " <<
-      "WHERE (w.long_ship_id > 0) " <<
-      "GROUP BY w.long_ship_id, w.name " <<
-      "ORDER BY count(o.object_id) DESC"
-    order = 'ORDER BY count(o.object_id) DESC'
-    sql2 = mod.replace_limit_offset!(sql.dup, 1, 2, order)
-    expected = 'SELECT t.* FROM ( SELECT ROW_NUMBER() OVER(ORDER BY count(o.object_id) DESC) AS _row_num, w.*, count(o.object_id) num_objects FROM [vikings] w'
-    assert sql2.start_with?(expected), sql2
-
-    order = ' ORDER BY count(o.object_id) DESC'
-    mod.replace_limit_offset!(sql, 1, 2, order)
-    expected = 'SELECT t.* FROM ( SELECT ROW_NUMBER() OVER( ORDER BY count(o.object_id) DESC) AS _row_num, w.*, count(o.object_id) num_objects FROM [vikings] w'
-    assert sql.start_with?(expected), sql
-  end
-
-  test 'replace limit offset! with distinct' do
-    mod = ArJdbc::MSSQL::LimitHelpers::SqlServerReplaceLimitOffset
-    sql = 'SELECT DISTINCT w.* ' <<
-      'FROM [vikings] w inner join long_ships s on s.id = w.long_ship_id ' <<
-      'WHERE (w.long_ship_id = 1) '
-    order = 'ORDER BY [vikings].id DESC'
-    sql2 = mod.replace_limit_offset!(sql.dup, 1, 2, order)
-    expected = 'SELECT t.* FROM ( SELECT ROW_NUMBER() OVER(ORDER BY t.id DESC) AS _row_num, t.* FROM (SELECT DISTINCT w.* FROM [vikings] w'
-    assert sql2.start_with?(expected), sql2
-  end
-
   private
 
   def new_adapter_stub(config = {})

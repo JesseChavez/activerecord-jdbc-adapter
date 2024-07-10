@@ -110,12 +110,12 @@ module Arel
 
       # include ArJdbc::MSSQL::LockMethods
 
-      include ArJdbc::MSSQL::LimitHelpers::SqlServerReplaceLimitOffset
+      # include ArJdbc::MSSQL::LimitHelpers::SqlServerReplaceLimitOffset
 
     end
 
     class SQLServer2000 < SQLServer
-      include ArJdbc::MSSQL::LimitHelpers::SqlServer2000ReplaceLimitOffset
+      # include ArJdbc::MSSQL::LimitHelpers::SqlServer2000ReplaceLimitOffset
     end
 
     load 'arel/visitors/sql_server/ng42.rb'
