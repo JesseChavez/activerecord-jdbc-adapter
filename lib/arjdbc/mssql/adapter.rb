@@ -47,12 +47,12 @@ module ActiveRecord
         16 => '2022'
       }.freeze
 
-      include Jdbc::ConnectionPoolCallbacks
-      include ArJdbc::Abstract::Core
-      include ArJdbc::Abstract::ConnectionManagement
-      include ArJdbc::Abstract::DatabaseStatements
-      include ArJdbc::Abstract::StatementCache
-      include ArJdbc::Abstract::TransactionSupport
+      # include Jdbc::ConnectionPoolCallbacks
+      # include ArJdbc::Abstract::Core
+      # include ArJdbc::Abstract::ConnectionManagement
+      # include ArJdbc::Abstract::DatabaseStatements
+      # include ArJdbc::Abstract::StatementCache
+      # include ArJdbc::Abstract::TransactionSupport
 
       include MSSQL::Quoting
       include MSSQL::SchemaStatements
@@ -178,10 +178,10 @@ module ActiveRecord
         !native_database_types[type].nil?
       end
 
-      def clear_cache!
-        # reload_type_map
-        super
-      end
+      # def clear_cache!
+      #   # reload_type_map
+      #   super
+      # end
 
       def reset!
         # execute 'IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION'
