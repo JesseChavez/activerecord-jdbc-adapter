@@ -45,18 +45,22 @@ module ActiveRecord
           end
         end
 
-        # Not a rails method, own method to test different isolation
-        # levels supported by the mssql adapter.
+        # Internal method to test different isolation levels supported by this
+        # mssql adapter. NOTE: not a active record method
         def supports_transaction_isolation_level?(level)
-          @connection.supports_transaction_isolation?(level)
+          raw_jdbc_connection.supports_transaction_isolation?(level)
         end
 
+        # Internal method to test different isolation levels supported by this
+        # mssql adapter. Not a active record method
         def transaction_isolation=(value)
-          @connection.set_transaction_isolation(value)
+          raw_jdbc_connection.set_transaction_isolation(value)
         end
 
+        # Internal method to test different isolation levels supported by this
+        # mssql adapter. Not a active record method
         def transaction_isolation
-          @connection.get_transaction_isolation
+          raw_jdbc_connection.get_transaction_isolation
         end
 
         def insert_fixtures_set(fixture_set, tables_to_delete = [])
