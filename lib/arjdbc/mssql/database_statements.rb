@@ -33,23 +33,6 @@ module ActiveRecord
           !READ_QUERY.match?(sql)
         end
 
-        def execute(sql, name = nil)
-          # with identity insert on block
-          if insert_sql?(sql)
-            table_name_for_identity_insert = identity_insert_table_name(sql)
-
-            if table_name_for_identity_insert
-              with_identity_insert_enabled(table_name_for_identity_insert) do
-                super
-              end
-            else
-              super
-            end
-          else
-            super
-          end
-        end
-
         def exec_insert(sql, name = nil, binds = [], pk = nil, sequence_name = nil)
           table_name_for_identity_insert = identity_insert_table_name(sql)
 
@@ -115,7 +98,51 @@ module ActiveRecord
           end
         end
 
+        def internal_exec_query(sql, name = 'SQL', binds = [], prepare: false, async: false)
+          sql = transform_query(sql)
+
+          check_if_write_query(sql)
+
+          mark_transaction_written_if_write(sql)
+
+          # binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
+
+          if without_prepared_statement?(binds)
+            log(sql, name) do
+              with_raw_connection do |conn|
+                result = conn.execute_query(sql)
+                verified!
+                result
+              end
+            end
+          else
+            log(sql, name, binds) do
+              with_raw_connection do |conn|
+                # this is different from normal AR that always caches
+                cached_statement = fetch_cached_statement(sql) if prepare && @jdbc_statement_cache_enabled
+                result = conn.execute_prepared_query(sql, binds, cached_statement)
+                verified!
+                result
+              end
+            end
+          end
+        end
+
         private
+
+        def raw_execute(sql, name, async: false, allow_retry: false, materialize_transactions: true)
+          log(sql, name, async: async) do
+            with_raw_connection(allow_retry: allow_retry, materialize_transactions: materialize_transactions) do |conn|
+              result = conn.execute(sql)
+              verified!
+              result
+            end
+          end
+        end
+
+        def raw_jdbc_connection
+          @raw_connection
+        end
 
         # It seems the truncate_tables is mostly used for testing
         # this a workaround to the fact that SQL Server truncate tables
