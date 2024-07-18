@@ -37,8 +37,6 @@ class MSSQLSpecificTest < Test::Unit::TestCase
 
     conn.schema_cache.clear!
 
-    binding.irb
-
     error = assert_raises do
       conn.check_version
     end

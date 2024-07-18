@@ -76,11 +76,11 @@ module ActiveRecord
         end
 
         def primary_keys(table_name)
-          @connection.primary_keys(table_name)
+          valid_raw_connection.primary_keys(table_name)
         end
 
         def foreign_keys(table_name)
-          @connection.foreign_keys(table_name)
+          valid_raw_connection.foreign_keys(table_name)
         end
 
         def charset
@@ -371,7 +371,7 @@ module ActiveRecord
           MSSQL::TableDefinition.new(self, name, **options)
         end
 
-        def new_column_from_field(table_name, field)
+        def new_column_from_field(table_name, field, definitions)
           # NOTE: this method is used by the columns method in the abstract Class
           # to map column_definitions. It would be good if column_definitions is
           # implemented in ruby
