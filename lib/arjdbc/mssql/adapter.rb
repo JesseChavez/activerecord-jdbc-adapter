@@ -16,6 +16,7 @@ require 'arjdbc/abstract/statement_cache'
 require 'arjdbc/abstract/transaction_support'
 
 require 'arjdbc/mssql/utils'
+require 'arjdbc/mssql/server_version'
 require 'arjdbc/mssql/column'
 require 'arjdbc/mssql/types'
 require 'arjdbc/mssql/quoting'
@@ -34,18 +35,6 @@ module ActiveRecord
     # MSSQL (SQLServer) adapter class definition
     class MSSQLAdapter < AbstractAdapter
       ADAPTER_NAME = 'MSSQL'.freeze
-
-      MSSQL_VERSION_YEAR = {
-        8  => '2000',
-        9  => '2005',
-        10 => '2008',
-        11 => '2012',
-        12 => '2014',
-        13 => '2016',
-        14 => '2017',
-        15 => '2019',
-        16 => '2022'
-      }.freeze
 
       # include Jdbc::ConnectionPoolCallbacks
       # include ArJdbc::Abstract::Core
@@ -285,35 +274,31 @@ module ActiveRecord
         true
       end
 
-      def mssql_major_version
-        return @mssql_major_version if defined? @mssql_major_version
-
-        @mssql_major_version = @connection.database_major_version
-      end
-
-      def mssql_version_year
-        MSSQL_VERSION_YEAR[mssql_major_version.to_i]
-      end
-
-      def mssql_product_version
-        return @mssql_product_version if defined? @mssql_product_version
-
-        @mssql_product_version = @connection.database_product_version
-      end
-
-      def mssql_product_name
-        return @mssql_product_name if defined? @mssql_product_name
-
-        @mssql_product_name = @connection.database_product_name
-      end
-
       def get_database_version # :nodoc:
-        MSSQLAdapter::Version.new(mssql_product_version)
+        MSSQLAdapter::Version.new(mssql_version.major, mssql_version.complete)
       end
 
       def check_version # :nodoc:
-        # NOTE: hitting the database from here causes trouble when adapter
-        # uses JNDI or Data Source setup.
+        return unless database_version.to_s <= mssql_version.min_major
+
+        raise "Your #{mssql_version.product_name} is too old. #{mssql_version.support_message}"
+      end
+
+      def mssql_version
+        return @mssql_version if defined? @mssql_version
+
+        result = query("SELECT #{mssql_version_properties.join(', ')}", 'SCHEMA')
+
+        @mssql_version = MSSQL::Version.new(result.flatten)
+      end
+
+      def mssql_version_properties
+        [
+          "SERVERPROPERTY('productVersion')",
+          "SERVERPROPERTY('productMajorVersion')",
+          "SERVERPROPERTY('productLevel')",
+          "SERVERPROPERTY('edition')"
+        ]
       end
 
       def tables_with_referential_integrity
