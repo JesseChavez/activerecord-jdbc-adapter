@@ -4,7 +4,6 @@ module ActiveRecord
   module ConnectionAdapters
     module MSSQL
       module DatabaseStatements
-
         def exec_proc(proc_name, *variables)
           vars =
             if variables.any? && variables.first.is_a?(Hash)

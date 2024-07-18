@@ -66,13 +66,15 @@ module ActiveRecord
         attr_accessor :cs_equality_operator
       end
 
-      def initialize(connection, logger, _connection_parameters, config = {})
+      def initialize(...)
         # configure_connection happens in super
-        super(connection, logger, config)
+        super
 
-        if database_version < '11'
-          raise "Your #{mssql_product_name} #{mssql_version_year} is too old. This adapter supports #{mssql_product_name} >= 2012."
-        end
+        conn_params = @config.compact
+
+        @raw_connection = nil
+
+        @connection_parameters = conn_params
       end
 
       def self.database_exists?(config)
@@ -88,7 +90,7 @@ module ActiveRecord
 
       # Returns the (JDBC) connection class to be used for this adapter.
       # The class is defined in the java part
-      def jdbc_connection_class(_spec)
+      def jdbc_connection_class
         ::ActiveRecord::ConnectionAdapters::MSSQLJdbcConnection
       end
 
@@ -274,7 +276,7 @@ module ActiveRecord
       end
 
       def set_session_transaction_isolation
-        isolation_level = config[:transaction_isolation]
+        isolation_level = @config[:transaction_isolation]
 
         self.transaction_isolation = isolation_level if isolation_level
       end
@@ -440,6 +442,20 @@ module ActiveRecord
       TYPE_MAP = Type::TypeMap.new.tap { |m| initialize_type_map(m) }
 
       private
+
+      def connect
+        @raw_connection = jdbc_connection_class.new(@connection_parameters, self)
+      rescue ConnectionNotEstablished => ex
+        raise ex.set_pool(@pool)
+      end
+
+      def reconnect
+        @raw_connection&.disconnect!
+
+        @raw_connection = nil
+
+        connect
+      end
 
       def type_map
         TYPE_MAP

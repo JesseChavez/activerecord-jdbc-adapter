@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 ArJdbc::ConnectionMethods.module_eval do
+  def mssql_adapter_class
+    ConnectionAdapters::MSSQLAdapter
+  end
+
   # NOTE: Assumes SQLServer SQL-JDBC driver on the class-path.
   def mssql_connection(config)
     config = config.deep_dup

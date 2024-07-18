@@ -4,10 +4,10 @@ module ArJdbc
   ConnectionMethods = ::ActiveRecord::ConnectionHandling
 
   ConnectionMethods.module_eval do
-
     def jdbc_connection(config)
       adapter_class = config[:adapter_class] || ::ActiveRecord::ConnectionAdapters::JdbcAdapter
-      adapter_class.new(nil, logger, nil, config)
+
+      adapter_class.new(config)
     end
 
     def jndi_connection(config); jdbc_connection(config) end
