@@ -151,16 +151,20 @@ module ActiveRecord
           # https://docs.microsoft.com/en-us/sql/t-sql/statements/drop-table-transact-sql?view=sql-server-2017
           if options[:force] == :cascade
             execute_procedure(:sp_fkeys, pktable_name: table_name).each do |fkdata|
-              fktable = fkdata['FKTABLE_NAME']
-              fkcolmn = fkdata['FKCOLUMN_NAME']
-              pktable = fkdata['PKTABLE_NAME']
-              pkcolmn = fkdata['PKCOLUMN_NAME']
-              remove_foreign_key(fktable, name: fkdata['FK_NAME'])
-              execute("DELETE FROM #{quote_table_name(fktable)} WHERE #{quote_column_name(fkcolmn)} IN ( SELECT #{quote_column_name(pkcolmn)} FROM #{quote_table_name(pktable)} )")
+              raw_fktable = fkdata['FKTABLE_NAME']
+              remove_foreign_key(raw_fktable, name: fkdata['FK_NAME'])
+
+              fktable = quote_table_name(fkdata['FKTABLE_NAME'])
+              fkcolmn = quote_column_name(fkdata['FKCOLUMN_NAME'])
+
+              pktable = quote_table_name(fkdata['PKTABLE_NAME'])
+              pkcolmn = quote_column_name(fkdata['PKCOLUMN_NAME'])
+
+              execute("DELETE FROM #{fktable} WHERE #{fkcolmn} IN ( SELECT #{pkcolmn} FROM #{pktable} )")
             end
           end
 
-          if options[:if_exists] && mssql_major_version < 13
+          if options[:if_exists] && mssql_version.major < '13'
             # this is for sql server 2012 and 2014
             execute "IF EXISTS(SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = #{quote(table_name)}) DROP TABLE #{quote_table_name(table_name)}"
           else

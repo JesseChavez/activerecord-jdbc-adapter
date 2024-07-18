@@ -37,7 +37,7 @@ module ActiveRecord
       ADAPTER_NAME = 'MSSQL'.freeze
 
       # include Jdbc::ConnectionPoolCallbacks
-      # include ArJdbc::Abstract::Core
+      include ArJdbc::Abstract::Core
       # include ArJdbc::Abstract::ConnectionManagement
       # include ArJdbc::Abstract::DatabaseStatements
       # include ArJdbc::Abstract::StatementCache
@@ -456,6 +456,8 @@ module ActiveRecord
           LockTimeout.new(message, sql: sql, binds: binds)
         when /The .* statement conflicted with the FOREIGN KEY constraint/
           InvalidForeignKey.new(message, sql: sql, binds: binds)
+        when /Could not drop object .* because it is referenced by a FOREIGN KEY constraint/
+          StatementInvalid.new(message, sql: sql, binds: binds)
         when /The .* statement conflicted with the REFERENCE constraint/
           InvalidForeignKey.new(message, sql: sql, binds: binds)
         when /(String or binary data would be truncated)/i

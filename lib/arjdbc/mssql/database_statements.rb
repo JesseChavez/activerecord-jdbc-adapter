@@ -13,8 +13,8 @@ module ActiveRecord
             end.join(', ')
           sql = "EXEC #{proc_name} #{vars}".strip
           log(sql, 'Execute Procedure') do
-            result = @connection.execute_query_raw(sql)
-            result.map! do |row|
+            result = execute(sql)
+            result.map do |row|
               row = row.is_a?(Hash) ? row.with_indifferent_access : row
               yield(row) if block_given?
               row
