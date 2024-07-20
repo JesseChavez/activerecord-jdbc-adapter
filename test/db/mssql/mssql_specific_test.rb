@@ -3,6 +3,14 @@ require 'db/mssql'
 class MSSQLSpecificTest < Test::Unit::TestCase
   MSSQL_VERSIONS = %w[8 9 10 11 12 13 14 15 16].freeze
 
+  def test_current_user
+    assert_equal 'dbo', ActiveRecord::Base.connection.current_user
+  end
+
+  def test_default_schema
+    assert_equal 'dbo', ActiveRecord::Base.connection.default_schema
+  end
+
   def test_mssql_is_implemented_and_returns_true
     conn = ActiveRecord::Base.connection
 

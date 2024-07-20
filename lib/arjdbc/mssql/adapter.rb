@@ -185,12 +185,12 @@ module ActiveRecord
         tables = tables_with_referential_integrity
 
         tables.each do |table_name|
-          execute "ALTER TABLE #{table_name} NOCHECK CONSTRAINT ALL"
+          internal_execute("ALTER TABLE #{table_name} NOCHECK CONSTRAINT ALL")
         end
         yield
       ensure
         tables.each do |table_name|
-          execute "ALTER TABLE #{table_name} CHECK CONSTRAINT ALL"
+          internal_execute("ALTER TABLE #{table_name} CHECK CONSTRAINT ALL")
         end
       end
 
@@ -214,13 +214,17 @@ module ActiveRecord
 
       # Returns the name of the current security context
       def current_user
-        @current_user ||= select_value('SELECT CURRENT_USER')
+        @current_user ||= internal_execute('SELECT CURRENT_USER').rows.flatten.first
       end
 
       # Returns the default schema (to be used for table resolution)
       # used for the {#current_user}.
       def default_schema
-        @default_schema ||= select_value('SELECT default_schema_name FROM sys.database_principals WHERE name = CURRENT_USER')
+        @default_schema ||= internal_execute(default_schema_query).rows.flatten.first
+      end
+
+      def default_schema_query
+        'SELECT default_schema_name FROM sys.database_principals WHERE name = CURRENT_USER'
       end
 
       alias_method :current_schema, :default_schema
@@ -228,7 +232,7 @@ module ActiveRecord
       # Allows for changing of the default schema.
       # (to be used during unqualified table name resolution).
       def default_schema=(default_schema)
-        execute("ALTER #{current_user} WITH DEFAULT_SCHEMA=#{default_schema}")
+        internal_execute("ALTER #{current_user} WITH DEFAULT_SCHEMA=#{default_schema}")
         @default_schema = nil if defined?(@default_schema)
       end
 
@@ -287,7 +291,7 @@ module ActiveRecord
       def mssql_version
         return @mssql_version if defined? @mssql_version
 
-        result = query("SELECT #{mssql_version_properties.join(', ')}", 'SCHEMA')
+        result = internal_execute("SELECT #{mssql_version_properties.join(', ')}").rows
 
         @mssql_version = MSSQL::Version.new(result.flatten)
       end
@@ -476,13 +480,11 @@ module ActiveRecord
       # NOTE: This is ready, all implemented in the java part of adapter,
       # it uses MSSQLColumn, SqlTypeMetadata, etc.
       def column_definitions(table_name)
-       log('JDBC: GETCOLUMNS', 'SCHEMA') { valid_raw_connection.columns(table_name, nil, default_schema) }
-      rescue => e
+        log('JDBC: GETCOLUMNS', 'SCHEMA') { valid_raw_connection.columns(table_name, nil, default_schema) }
         # raise translate_exception_class(e, nil)
         # FIXME: this breaks one arjdbc test but fixes activerecord tests
         # (table name alias). Also it behaves similarly to the CRuby adapter
         # which returns an empty array too. (postgres throws a exception)
-        []
       end
 
       def arel_visitor # :nodoc:
