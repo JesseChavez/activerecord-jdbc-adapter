@@ -181,24 +181,21 @@ module ActiveRecord
           end
         end
 
-        def insert_sql?(sql)
-          !(sql =~ /^\s*(INSERT|EXEC sp_executesql N'INSERT)/i).nil? 
-        end
-
         def identity_insert_table_name(sql)
-          table_name = get_table_name(sql)
+          return unless ArJdbc::MSSQL::Utils.insert_sql?(sql)
+
+          table_name = ArJdbc::MSSQL::Utils.get_table_name(sql)
+
           id_column = identity_column_name(table_name)
+
           if id_column && sql.strip =~ /INSERT INTO [^ ]+ ?\((.+?)\)/i
-            insert_columns = $1.split(/, */).map{|w| ArJdbc::MSSQL::Utils.unquote_column_name(w)}
+            insert_columns = $1.split(/, */).map { |w| ArJdbc::MSSQL::Utils.unquote_column_name(w) }
             return table_name if insert_columns.include?(id_column)
           end
         end
 
         def identity_column_name(table_name)
-          for column in schema_cache.columns(table_name)
-            return column.name if column.identity?
-          end
-          nil
+          schema_cache.columns(table_name).find(&:identity?)&.name
         end
 
         # Turns IDENTITY_INSERT ON for table during execution of the block
@@ -213,29 +210,14 @@ module ActiveRecord
 
         def set_identity_insert(table_name, enable = true)
           if enable
-            execute("SET IDENTITY_INSERT #{quote_table_name(table_name)} ON")
+            internal_execute("SET IDENTITY_INSERT #{quote_table_name(table_name)} ON")
           else
-            execute("SET IDENTITY_INSERT #{quote_table_name(table_name)} OFF")
+            internal_execute("SET IDENTITY_INSERT #{quote_table_name(table_name)} OFF")
           end
         rescue Exception => e
           raise ActiveRecord::ActiveRecordError, "IDENTITY_INSERT could not be turned" +
                 " #{enable ? 'ON' : 'OFF'} for table #{table_name} due : #{e.inspect}"
         end
-
-        def get_table_name(sql, qualified = nil)
-          if sql =~ TABLE_NAME_INSERT_UPDATE
-            tn = $2 || $3
-            qualified ? tn : ArJdbc::MSSQL::Utils.unqualify_table_name(tn)
-          elsif sql =~ TABLE_NAME_FROM
-            qualified ? $1 : ArJdbc::MSSQL::Utils.unqualify_table_name($1)
-          else
-            nil
-          end
-        end
-
-        TABLE_NAME_INSERT_UPDATE = /^\s*(INSERT|EXEC sp_executesql N'INSERT)(?:\s+INTO)?\s+([^\(\s]+)\s*|^\s*update\s+([^\(\s]+)\s*/i
-
-        TABLE_NAME_FROM = /\bFROM\s+([^\(\)\s,]+)\s*/i
       end
     end
   end

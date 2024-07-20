@@ -1,42 +1,40 @@
 require 'test_helper'
 
+require 'db/mssql'
+
 class MSSQLUnitTest < Test::Unit::TestCase
 
-  def self.startup; require 'arjdbc/mssql' end
-
-  # NOTE: lot of tests kindly borrowed from __activerecord-sqlserver-adapter__
+  def utils
+    ArJdbc::MSSQL::Utils
+  end
 
   test "get_table_name" do
     insert_sql = "INSERT INTO [funny_jokes] ([name]) VALUES('Knock knock')"
     update_sql = "UPDATE [customers] SET [address_street] = NULL WHERE [id] = 2"
     select_sql = "SELECT * FROM [customers] WHERE ([customers].[id] = 1)"
 
-    connection = new_adapter_stub
-    assert_equal 'funny_jokes', connection.send(:get_table_name, insert_sql)
-    assert_equal 'customers', connection.send(:get_table_name, update_sql)
-    assert_equal 'customers', connection.send(:get_table_name, select_sql)
+    assert_equal 'funny_jokes', utils.get_table_name(insert_sql)
+    assert_equal 'customers', utils.get_table_name(update_sql)
+    assert_equal 'customers', utils.get_table_name(select_sql)
 
-    assert_equal '[funny_jokes]', connection.send(:get_table_name, insert_sql, true)
-    assert_equal '[customers]', connection.send(:get_table_name, update_sql, true)
-    assert_equal '[customers]', connection.send(:get_table_name, select_sql, true)
+    assert_equal '[funny_jokes]', utils.get_table_name(insert_sql, true)
+    assert_equal '[customers]', utils.get_table_name(update_sql, true)
+    assert_equal '[customers]', utils.get_table_name(select_sql, true)
 
     select_sql = " SELECT * FROM  customers  WHERE ( customers.id = 1 ) "
-    assert_equal 'customers', connection.send(:get_table_name, select_sql)
-    assert_equal 'customers', connection.send(:get_table_name, select_sql, true)
+    assert_equal 'customers', utils.get_table_name(select_sql)
+    assert_equal 'customers', utils.get_table_name(select_sql, true)
 
-    assert_nil connection.send(:get_table_name, 'SELECT 1')
+    assert_nil utils.get_table_name('SELECT 1')
     # NOTE: this has been failing even before refactoring - not sure if it's needed :
-    #assert_nil connection.send(:get_table_name, 'SELECT * FROM someFunction()')
-    #assert_nil connection.send(:get_table_name, 'SELECT * FROM someFunction() WHERE 1 > 2')
+    # assert_nil utils.get_table_name('SELECT * FROM someFunction()')
+    # assert_nil utils.get_table_name('SELECT * FROM someFunction() WHERE 1 > 2')
 
     select_sql = "SELECT COUNT(*) FROM our_table WHERE text = \"INSERT INTO their_table VALUES ('a', 'b', 'c')\""
-    assert_equal 'our_table', connection.send(:get_table_name, select_sql)
+    assert_equal 'our_table', utils.get_table_name(select_sql)
   end
 
   context "Utils" do
-
-    def utils; ArJdbc::MSSQL::Utils end
-
     setup do
       @expected_table_name = 'baz'; @expected_db_name = 'foo'
       @first_second_table_names = ['[baz]','baz','[bar].[baz]','bar.baz']
@@ -136,12 +134,11 @@ class MSSQLUnitTest < Test::Unit::TestCase
 
   def new_adapter_stub(config = {})
     config = config.merge :adapter => 'mssql', :sqlserver_version => 2008
-    logger = nil
     # connection = stub('connection', database_major_version: 11)
     connection = stub('connection', database_product_version: '14.00.3238')
     connection.stub_everything
 
-    adapter = ActiveRecord::ConnectionAdapters::MSSQLAdapter.new connection, logger, config
+    adapter = ActiveRecord::ConnectionAdapters::MSSQLAdapter.new(config)
     yield(adapter) if block_given?
     adapter
   end

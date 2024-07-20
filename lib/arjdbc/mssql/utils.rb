@@ -27,6 +27,23 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 module ArJdbc
   module MSSQL
     module Utils
+      TABLE_NAME_INSERT_UPDATE = /^\s*(INSERT|EXEC sp_executesql N'INSERT)(?:\s+INTO)?\s+([^\(\s]+)\s*|^\s*update\s+([^\(\s]+)\s*/i
+
+      TABLE_NAME_FROM = /\bFROM\s+([^\(\)\s,]+)\s*/i
+
+      def self.insert_sql?(sql)
+        !(sql =~ /^\s*(INSERT|EXEC sp_executesql N'INSERT)/i).nil?
+      end
+
+      def self.get_table_name(sql, qualified = nil)
+        if sql =~ TABLE_NAME_INSERT_UPDATE
+          tn = $2 || $3
+          qualified ? tn : unqualify_table_name(tn)
+        elsif sql =~ TABLE_NAME_FROM
+          qualified ? $1 : unqualify_table_name($1)
+        end
+      end
+
       def self.unquote_table_name(table_name)
         remove_identifier_delimiters(table_name)
       end
@@ -41,6 +58,7 @@ module ArJdbc
 
       def self.unqualify_table_name(table_name)
         return if table_name.blank?
+
         remove_identifier_delimiters(table_name.to_s.split('.').last)
       end
 
