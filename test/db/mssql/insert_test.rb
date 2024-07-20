@@ -34,10 +34,32 @@ class MSSQLInsertTest < Test::Unit::TestCase
     ActiveRecord::Base.clear_active_connections!
   end
 
+  def test_create
+    data = { code: 'xoxo', total: 5.23, date_of_birth: '2000-12-25' }
+
+    result = InsertEntry.create(data)
+
+    assert_equal 'xoxo', result[:code]
+  end
+
+  def test_indentity_insert
+    db_conn = InsertEntry.connection
+
+    db_conn.execute("INSERT INTO insert_entries([id], [code]) VALUES (711, 'xoxo')")
+  end
+
   def test_insert
     data = {
       code: 'xoxo', total: 5.23, date_of_birth: '2000-12-25', expires_at: Time.now, start_at: Time.now
     }
+
+    result = InsertEntry.insert!(data, returning: Arel.sql('UPPER(INSERTED.code) as code'))
+
+    assert_equal ['XOXO'], result.pluck('code')
+  end
+
+  def test_insert_with_id
+    data = { id: 911, code: 'xoxo', total: 5.23, date_of_birth: '2000-12-25'}
 
     result = InsertEntry.insert!(data, returning: Arel.sql('UPPER(INSERTED.code) as code'))
 

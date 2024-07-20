@@ -33,18 +33,6 @@ module ActiveRecord
           !READ_QUERY.match?(sql)
         end
 
-        def exec_insert(sql, name = nil, binds = [], pk = nil, sequence_name = nil)
-          table_name_for_identity_insert = identity_insert_table_name(sql)
-
-          if table_name_for_identity_insert
-            with_identity_insert_enabled(table_name_for_identity_insert) do
-              super
-            end
-          else
-            super
-          end
-        end
-
         # Internal method to test different isolation levels supported by this
         # mssql adapter. NOTE: not a active record method
         def supports_transaction_isolation_level?(level)
@@ -114,7 +102,9 @@ module ActiveRecord
           if without_prepared_statement?(binds)
             log(sql, name) do
               with_raw_connection do |conn|
-                result = conn.execute_query(sql)
+                result = conditional_indentity_insert(sql) do
+                  conn.execute_query(sql)
+                end
                 verified!
                 result
               end
@@ -124,7 +114,10 @@ module ActiveRecord
               with_raw_connection do |conn|
                 # this is different from normal AR that always caches
                 cached_statement = fetch_cached_statement(sql) if prepare && @jdbc_statement_cache_enabled
-                result = conn.execute_prepared_query(sql, binds, cached_statement)
+
+                result = conditional_indentity_insert(sql) do
+                  conn.execute_prepared_query(sql, binds, cached_statement)
+                end
                 verified!
                 result
               end
@@ -137,10 +130,51 @@ module ActiveRecord
         def raw_execute(sql, name, async: false, allow_retry: false, materialize_transactions: true)
           log(sql, name, async: async) do
             with_raw_connection(allow_retry: allow_retry, materialize_transactions: materialize_transactions) do |conn|
-              result = conn.execute(sql)
+              result = conditional_indentity_insert(sql) { conn.execute(sql) }
               verified!
               result
             end
+          end
+        end
+
+        def sql_for_insert(sql, pk, binds, returning) # :nodoc:
+          return [sql, binds] unless supports_insert_returning?
+
+          if pk.nil?
+            # Extract the table from the insert sql. Yuck.
+            table_name = identity_insert_table_name(sql)
+            pk = primary_key(table_name) if table_name
+          end
+
+          returning_columns = returning || Array(pk)
+
+          returning_columns_stmt = returning_columns.map do |column|
+            "INSERTED.#{quote_column_name(column)}"
+          end.join(', ')
+
+
+          return [sql, binds] unless returning_columns.any?
+
+          index = sql.index(/VALUES\s\(\?/) || sql.index(/DEFAULT VALUES/)
+
+          insert_into = sql[0..(index - 1)].strip
+
+          values_list = sql[index..]
+
+          sql = "#{insert_into} OUTPUT #{returning_columns_stmt} #{values_list}"
+
+          [sql, binds]
+        end
+
+        def conditional_indentity_insert(sql, &block)
+          table_name_for_identity_insert = identity_insert_table_name(sql)
+
+          if table_name_for_identity_insert
+            with_identity_insert_enabled(table_name_for_identity_insert) do
+              block.call
+            end
+          else
+            block.call
           end
         end
 
