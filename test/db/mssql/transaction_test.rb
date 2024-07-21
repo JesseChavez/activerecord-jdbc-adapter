@@ -90,7 +90,7 @@ class MSSQLTransactionTest < Test::Unit::TestCase
   def test_transaction_isolation_read_committed
     # NOTE: this is the default setting of SQL Server.
     # READ_COMMITTED_SNAPSHOT OFF
-    db_name = Entry.connection.config[:database]
+    db_name = Entry.connection_db_config.database
     Entry.connection.execute "ALTER DATABASE [#{db_name}] SET READ_COMMITTED_SNAPSHOT OFF WITH ROLLBACK IMMEDIATE"
 
     # We are testing that a dirty read does not happen
@@ -111,7 +111,7 @@ class MSSQLTransactionTest < Test::Unit::TestCase
   def test_transaction_isolation_read_committed_snapshot_on
     # NOTE: this is the default setting of Azure SQL.
     # READ_COMMITTED_SNAPSHOT ON
-    db_name = Entry.connection.config[:database]
+    db_name = Entry.connection_db_config.database
     Entry.connection.execute "ALTER DATABASE [#{db_name}] SET READ_COMMITTED_SNAPSHOT ON WITH ROLLBACK IMMEDIATE"
 
     # We are testing that a dirty read does not happen
@@ -174,7 +174,7 @@ class MSSQLTransactionTest < Test::Unit::TestCase
   end
 
   def test_transaction_isolation_snapshot_case_one
-    db_name = Entry.connection.config[:database]
+    db_name = Entry.connection_db_config.database
     Entry.connection.execute "ALTER DATABASE [#{db_name}] SET ALLOW_SNAPSHOT_ISOLATION ON"
     entry = User.create!(login: 'user007')
 
@@ -193,7 +193,7 @@ class MSSQLTransactionTest < Test::Unit::TestCase
   end
 
   def test_transaction_isolation_snapshot_case_two
-    db_name = Entry.connection.config[:database]
+    db_name = Entry.connection_db_config.database
     Entry.connection.execute "ALTER DATABASE [#{db_name}] SET ALLOW_SNAPSHOT_ISOLATION ON"
     entry = User.create!(login: 'user007')
 
@@ -217,7 +217,7 @@ class MSSQLTransactionTest < Test::Unit::TestCase
   end
 
   def test_transaction_isolation_snapshot_case_three
-    db_name = Entry.connection.config[:database]
+    db_name = Entry.connection_db_config.database
     Entry.connection.execute "ALTER DATABASE [#{db_name}] SET ALLOW_SNAPSHOT_ISOLATION ON"
     entry = User.create!(login: 'user007')
 

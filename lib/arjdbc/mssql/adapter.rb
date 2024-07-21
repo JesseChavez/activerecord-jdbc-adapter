@@ -41,7 +41,7 @@ module ActiveRecord
       include ArJdbc::Abstract::ConnectionManagement
       # include ArJdbc::Abstract::DatabaseStatements
       # include ArJdbc::Abstract::StatementCache
-      # include ArJdbc::Abstract::TransactionSupport
+      include ArJdbc::Abstract::TransactionSupport
 
       include MSSQL::Quoting
       include MSSQL::SchemaStatements
@@ -470,6 +470,8 @@ module ActiveRecord
           NotNullViolation.new(message, sql: sql, binds: binds)
         when /Arithmetic overflow error converting expression/
           RangeError.new(message, sql: sql, binds: binds)
+        when /Snapshot isolation transaction aborted due to update conflict. You cannot use snapshot isolation/
+          StatementInvalid.new(message, sql: sql, binds: binds)
         else
           super
         end
