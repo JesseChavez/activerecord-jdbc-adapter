@@ -265,7 +265,10 @@ module ActiveRecord
             options[:precision] = 7
           end
 
-          super
+          # In SQL Server only the first column added should have the `ADD` keyword.
+          fragments = add_timestamps_for_alter(table_name, **options)
+          fragments[1..].each { |fragment| fragment.sub!('ADD ', '') }
+          execute("ALTER TABLE #{quote_table_name(table_name)} #{fragments.join(', ')}")
         end
 
         def add_column(table_name, column_name, type, **options)

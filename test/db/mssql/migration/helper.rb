@@ -23,7 +23,7 @@ module MSSQLMigration
       change_table
     ].freeze
 
-    class CreateColumnModifications< ActiveRecord::Migration[6.0]
+    class CreateColumnModifications < ActiveRecord::Migration[6.0]
       def self.up
         create_table :entries do |t|
 

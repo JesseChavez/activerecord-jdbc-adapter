@@ -5,21 +5,21 @@ module ActiveRecord
     module MSSQL
       module DatabaseStatements
         def exec_proc(proc_name, *variables)
-          vars =
-            if variables.any? && variables.first.is_a?(Hash)
-              variables.first.map { |k, v| "@#{k} = #{quote(v)}" }
-            else
-              variables.map { |v| quote(v) }
-            end.join(', ')
+          vars = if variables.any? && variables.first.is_a?(Hash)
+                   variables.first.map { |k, v| "@#{k} = #{quote(v)}" }
+                 else
+                   variables.map { |v| quote(v) }
+                 end.join(', ')
+
           sql = "EXEC #{proc_name} #{vars}".strip
           log(sql, 'Execute Procedure') do
-            result = execute(sql)
+            result = internal_execute(sql)
+
             result.map do |row|
               row = row.is_a?(Hash) ? row.with_indifferent_access : row
               yield(row) if block_given?
               row
             end
-            result
           end
         end
         alias_method :execute_procedure, :exec_proc # AR-SQLServer-Adapter naming
@@ -99,6 +99,7 @@ module ActiveRecord
 
           # binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
 
+          # puts "internal----->sql: #{sql}, binds: #{binds}"
           if without_prepared_statement?(binds)
             log(sql, name) do
               with_raw_connection do |conn|
@@ -128,6 +129,7 @@ module ActiveRecord
         private
 
         def raw_execute(sql, name, async: false, allow_retry: false, materialize_transactions: true)
+          # puts "raw_execute----->sql: #{sql}"
           log(sql, name, async: async) do
             with_raw_connection(allow_retry: allow_retry, materialize_transactions: materialize_transactions) do |conn|
               result = conditional_indentity_insert(sql) { conn.execute(sql) }
