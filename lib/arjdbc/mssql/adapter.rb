@@ -38,7 +38,7 @@ module ActiveRecord
 
       # include Jdbc::ConnectionPoolCallbacks
       include ArJdbc::Abstract::Core
-      include ArJdbc::Abstract::ConnectionManagement
+      # include ArJdbc::Abstract::ConnectionManagement
       # include ArJdbc::Abstract::DatabaseStatements
       # include ArJdbc::Abstract::StatementCache
       include ArJdbc::Abstract::TransactionSupport
@@ -64,6 +64,19 @@ module ActiveRecord
         @raw_connection = nil
 
         @connection_parameters = conn_params
+      end
+
+      # @override
+      def active?
+        return false unless @raw_connection
+
+        @raw_connection.active?
+      end
+
+      # @override
+      def disconnect!
+        super # clear_cache! && reset_transaction
+        @raw_connection&.disconnect!
       end
 
       def self.database_exists?(config)
@@ -438,13 +451,13 @@ module ActiveRecord
         raise ex.set_pool(@pool)
       end
 
-      # def reconnect
-      #   @raw_connection&.disconnect!
+      def reconnect
+        @raw_connection&.disconnect!
 
-      #   @raw_connection = nil
+        @raw_connection = nil
 
-      #   connect
-      # end
+        connect
+      end
 
       def type_map
         TYPE_MAP

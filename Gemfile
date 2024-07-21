@@ -46,7 +46,7 @@ elsif ENV['AR_VERSION'] # Use specific version of AR and not .gemspec version
   end
 else
   if defined? JRUBY_VERSION
-    gemspec name: 'activerecord-jdbc-adapter' # Use versiom from .gemspec
+    gemspec name: 'activerecord-jdbc-alt-adapter' # Use versiom from .gemspec
   else # read add_dependency 'activerecord', '~> 7.0' and use the same requirement on MRI
     ar_req = File.read('activerecord-jdbc-adapter.gemspec').match(/add_dependency.*?activerecord.*['"](.*?)['"]/)[1]
     raise "add_dependency 'activerecord', ... line not detected in gemspec" unless ar_req
