@@ -16,6 +16,8 @@ Rake tasks are loaded from **rakelib/02-test-rake**, most adapters have a
 corresponding test_[adapter] task e.g. `rake test_sqlite3` that run against DB.
 To check all available (test related) tasks simply `rake -T | grep test`.
 
+### Database Setup
+
 If the adapter supports creating a database it will try to do so automatically
 (most embed databases such as SQLite3) for some adapters (MySQL, PostgreSQL) we
 do this auto-magically (see the `rake db:create` tasks), but otherwise you'll
@@ -48,6 +50,40 @@ but one can easily run tests with prepared statements disabled using env vars :
 
     rake test_derby PREPARED_STATEMENTS=false
 
+#### MySQL with Docker
+
+The standard Docker MySQL image can be used for testing and development. Depending on your environment these commands
+may need to be run as root.
+
+Pull the image:
+
+```
+sudo docker pull mysql
+```
+
+Start up the database with a root password (we show a simple one here but pick one no one else knows):
+
+```
+docker run -p 3306:3306 --name mysql -e MYSQL_ROOT_PASSWORD=testtest9 -d mysql
+```
+
+The `mysql` client can be run through Docker as well:
+
+```sh
+docker run -it --link mysql:mysql --rm mysql sh -c 'exec mysql -h"$MYSQL_PORT_3306_TCP_ADDR" -P"$MYSQL_PORT_3306_TCP_PORT" -uroot -p"$MYSQL_ENV_MYSQL_ROOT_PASSWORD"'
+```
+
+Set up the database for the unit tests (you may need to replace 'localhost' with your container's IP):
+
+```sql
+CREATE USER 'rails'@'localhost' IDENTIFIED BY 'testtest9';
+CREATE DATABASE activerecord_unittest;
+GRANT ALL PRIVILEGES ON activerecord_unittest.* TO 'rails'@'localhost';
+CREATE DATABASE activerecord_unittest2;
+GRANT ALL PRIVILEGES ON activerecord_unittest2.* TO 'rails'@'localhost';
+```
+
+Then edit test/rails/config.yml for the appropriate configuration credentials.
 
 ### ActiveRecord (Rails) Tests
 

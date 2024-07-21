@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 module ArJdbc
-  VERSION = '71.0.0'
+  VERSION = '71.0'
 end

@@ -793,7 +793,8 @@ public class RubyJdbcConnection extends RubyObject {
                         // Unfortunately the result set gets closed when getMoreResults()
                         // is called, so we have to process the result sets as we get them
                         // this shouldn't be an issue in most cases since we're only getting 1 result set anyways
-                        result = mapExecuteResult(context, connection, resultSet);
+                        //result = mapExecuteResult(context, connection, resultSet);
+                        result = mapToRawResult(context, connection, resultSet, false);
                         resultSet.close();
                     } else {
                         result = context.runtime.newFixnum(updateCount);
@@ -2735,8 +2736,9 @@ public class RubyJdbcConnection extends RubyObject {
             statement.setDouble(index, ((RubyNumeric) value).getDoubleValue());
         }
         else { // e.g. `BigDecimal '42.00000000000000000001'`
+            Ruby runtime = context.runtime;
             statement.setBigDecimal(index,
-                    RubyBigDecimal.newInstance(context, context.runtime.getModule("BigDecimal"), value, RubyFixnum.newFixnum(context.runtime, Integer.MAX_VALUE)).getValue());
+                    RubyBigDecimal.newInstance(context, runtime.getModule("BigDecimal"), value, RubyFixnum.zero(runtime)).getValue());
         }
     }
 

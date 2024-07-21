@@ -40,6 +40,7 @@ namespace :rails do
           File.join(root_dir, 'lib'),
           File.join(root_dir, driver, 'lib'),
           File.join(root_dir, 'test/rails'),
+          File.join(root_dir, 'jdbc-sqlite3', 'lib'),  # Added for connection management tests which hardcode sqlite3
           ar_test_dir
       ]
 
@@ -57,6 +58,7 @@ namespace :rails do
       ruby_opts_string += " -C \"#{ar_path}\""
       ruby_opts_string += " -rbundler/setup"
       ruby_opts_string += " -rminitest -rminitest/excludes" unless ENV['NO_EXCLUDES'].eql?('true')
+      ruby_opts_string += " -rmonkey_patches"
       file_list = ENV["TEST"] ? FileList[ ENV["TEST"].split(',') ] : test_files_finder.call
       file_list_string = file_list.map { |fn| "\"#{fn}\"" }.join(' ')
       # test_loader_code = "-e \"ARGV.each{|f| require f}\"" # :direct

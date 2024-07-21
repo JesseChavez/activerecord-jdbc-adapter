@@ -143,10 +143,14 @@ Versions are targeted at certain versions of Rails and live on their own branche
 | 51.x        | 5.1.x         | 51-stable | 9.1.x     | 7        |
 | 52.x        | 5.2.x         | 52-stable | 9.1.x     | 7        |
 | 60.x        | 6.0.x         | 60-stable | 9.2.7     | 8        |
-| 61.x        | 6.1.x         | master    | 9.2.7     | 8        |
+| 61.x        | 6.1.x         | 61-stable | 9.2.7     | 8        |
+| 70.x        | 7.0.x         | 70-stable | 9.3.0     | 8        |
+| 71.x        | 7.1.x         | master    | 9.4.3     | 8        |
 
-Note that JRuby 9.1.x is end-of-life. We recommend Java 8 at a minimum for all
-versions.
+Note: 71.x is still under development and not supported yet.
+
+Note that JRuby 9.1.x and JRuby 9.2.x are at end-of-life. We recommend Java 8
+at a minimum for all versions.
 
 ## Using ActiveRecord JDBC
 

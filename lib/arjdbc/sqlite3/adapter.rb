@@ -16,6 +16,7 @@ require "active_record/connection_adapters/sqlite3/schema_definitions"
 require "active_record/connection_adapters/sqlite3/schema_dumper"
 require "active_record/connection_adapters/sqlite3/schema_statements"
 require "active_support/core_ext/class/attribute"
+require "arjdbc/sqlite3/column"
 
 module SQLite3
   module Constants
@@ -89,20 +90,8 @@ module ArJdbc
       end
     end
 
-    def initialize(connection, logger, connection_options, config)
-      @memory_database = config[:database] == ":memory:"
-      super(connection, logger, config)
-      configure_connection
-    end
-
     def self.database_exists?(config)
-      config = config.symbolize_keys
-      if config[:database] == ":memory:"
-        true
-      else
-        database_file = defined?(Rails.root) ? File.expand_path(config[:database], Rails.root) : config[:database]
-        File.exist?(database_file)
-      end
+      @config[:database] == ":memory:" || File.exist?(@config[:database].to_s)
     end
 
     def supports_ddl_transactions?
@@ -153,6 +142,10 @@ module ArJdbc
       database_version >= "3.8.3"
     end
 
+    def supports_insert_returning?
+      database_version >= "3.35.0"
+    end
+
     def supports_insert_on_conflict?
       database_version >= "3.24.0"
     end
@@ -166,19 +159,22 @@ module ArJdbc
     end
 
     def active?
-      !@raw_connection.closed?
+      @raw_connection && !@raw_connection.closed?
     end
 
-    def reconnect!
-      super
-      connect if @connection.closed?
+    def return_value_after_insert?(column) # :nodoc:
+      column.auto_populated?
     end
+
+    # MISSING:       alias :reset! :reconnect!
 
     # Disconnects from the database if already connected. Otherwise, this
     # method does nothing.
     def disconnect!
       super
-      @connection.close rescue nil
+
+      @raw_connection&.close rescue nil
+      @raw_connection = nil
     end
 
     def supports_index_sort_order?
@@ -191,7 +187,7 @@ module ArJdbc
 
     # Returns the current database encoding format as a string, eg: 'UTF-8'
     def encoding
-      @connection.encoding.to_s
+      any_raw_connection.encoding.to_s
     end
 
     def supports_explain?
@@ -218,8 +214,14 @@ module ArJdbc
       end
     end
 
-    def all_foreign_keys_valid? # :nodoc:
-      execute("PRAGMA foreign_key_check").blank?
+    def check_all_foreign_keys_valid! # :nodoc:
+      sql = "PRAGMA foreign_key_check"
+      result = execute(sql)
+
+      unless result.blank?
+        tables = result.map { |row| row["table"] }
+        raise ActiveRecord::StatementInvalid.new("Foreign key violations found: #{tables.join(", ")}", sql: sql)
+      end
     end
 
     # SCHEMA STATEMENTS ========================================
@@ -234,7 +236,7 @@ module ArJdbc
 
       index_name = index_name_for_remove(table_name, column_name, options)
 
-      exec_query "DROP INDEX #{quote_column_name(index_name)}"
+      internal_exec_query "DROP INDEX #{quote_column_name(index_name)}"
     end
 
     
@@ -242,10 +244,11 @@ module ArJdbc
     #
     # Example:
     #   rename_table('octopuses', 'octopi')
-    def rename_table(table_name, new_name)
+    def rename_table(table_name, new_name, **options)
+      validate_table_length!(new_name) unless options[:_uses_legacy_table_name]      
       schema_cache.clear_data_source_cache!(table_name.to_s)
       schema_cache.clear_data_source_cache!(new_name.to_s)
-      exec_query "ALTER TABLE #{quote_table_name(table_name)} RENAME TO #{quote_table_name(new_name)}"
+      internal_exec_query "ALTER TABLE #{quote_table_name(table_name)} RENAME TO #{quote_table_name(new_name)}"
       rename_table_indexes(table_name, new_name)
     end
 
@@ -285,8 +288,10 @@ module ArJdbc
     end
 
     def change_column_null(table_name, column_name, null, default = nil) #:nodoc:
+      validate_change_column_null_argument!(null)
+
       unless null || default.nil?
-        exec_query("UPDATE #{quote_table_name(table_name)} SET #{quote_column_name(column_name)}=#{quote(default)} WHERE #{quote_column_name(column_name)} IS NULL")
+        internal_exec_query("UPDATE #{quote_table_name(table_name)} SET #{quote_column_name(column_name)}=#{quote(default)} WHERE #{quote_column_name(column_name)} IS NULL")
       end
       alter_table(table_name) do |definition|
         definition[column_name].null = null
@@ -295,10 +300,7 @@ module ArJdbc
 
     def change_column(table_name, column_name, type, **options) #:nodoc:
       alter_table(table_name) do |definition|
-        definition[column_name].instance_eval do
-          self.type = aliased_types(type.to_s, type)
-          self.options.merge!(options)
-        end
+        definition.change_column(column_name, type, **options)
       end
     end
 
@@ -308,20 +310,42 @@ module ArJdbc
       rename_column_indexes(table_name, column.name, new_column_name)
     end
 
+    def add_timestamps(table_name, **options)
+      options[:null] = false if options[:null].nil?
+
+      if !options.key?(:precision)
+        options[:precision] = 6
+      end
+
+      alter_table(table_name) do |definition|
+        definition.column :created_at, :datetime, **options
+        definition.column :updated_at, :datetime, **options
+      end
+    end
+
     def add_reference(table_name, ref_name, **options) # :nodoc:
       super(table_name, ref_name, type: :integer, **options)
     end
     alias :add_belongs_to :add_reference
 
     def foreign_keys(table_name)
-      fk_info = exec_query("PRAGMA foreign_key_list(#{quote(table_name)})", "SCHEMA")
-      fk_info.map do |row|
+      # SQLite returns 1 row for each column of composite foreign keys.
+      fk_info = internal_exec_query("PRAGMA foreign_key_list(#{quote(table_name)})", "SCHEMA")
+      grouped_fk = fk_info.group_by { |row| row["id"] }.values.each { |group| group.sort_by! { |row| row["seq"] } }
+      grouped_fk.map do |group|
+        row = group.first
         options = {
-          column: row["from"],
-          primary_key: row["to"],
           on_delete: extract_foreign_key_action(row["on_delete"]),
           on_update: extract_foreign_key_action(row["on_update"])
         }
+
+        if group.one?
+          options[:column] = row["from"]
+          options[:primary_key] = row["to"]
+        else
+          options[:column] = group.map { |row| row["from"] }
+          options[:primary_key] = group.map { |row| row["to"] }
+        end
         # DIFFERENCE: FQN
         ::ActiveRecord::ConnectionAdapters::ForeignKeyDefinition.new(table_name, row["table"], options)
       end
@@ -342,11 +366,16 @@ module ArJdbc
         end
       end
 
+      sql << " RETURNING #{insert.returning}" if insert.returning
       sql
     end
 
     def shared_cache? # :nodoc:
       @config.fetch(:flags, 0).anybits?(::SQLite3::Constants::Open::SHAREDCACHE)
+    end
+
+    def use_insert_returning?
+      @use_insert_returning
     end
 
     def get_database_version # :nodoc:
@@ -359,6 +388,27 @@ module ArJdbc
       end
     end
 
+    # DIFFERENCE: here to 
+    def new_column_from_field(table_name, field, definitions)
+      default = field["dflt_value"]
+
+      type_metadata = fetch_type_metadata(field["type"])
+      default_value = extract_value_from_default(default)
+      default_function = extract_default_function(default_value, default)
+      rowid = is_column_the_rowid?(field, definitions)
+
+      ActiveRecord::ConnectionAdapters::SQLite3Column.new(
+        field["name"],
+        default_value,
+        type_metadata,
+        field["notnull"].to_i == 0,
+        default_function,
+        collation: field["collation"],
+        auto_increment: field["auto_increment"],
+        rowid: rowid
+      )
+    end
+
     private
     # See https://www.sqlite.org/limits.html,
     # the default value is 999 when not configured.
@@ -367,7 +417,7 @@ module ArJdbc
     end
 
     def table_structure(table_name)
-      structure = exec_query("PRAGMA table_info(#{quote_table_name(table_name)})", "SCHEMA")
+      structure = internal_exec_query("PRAGMA table_info(#{quote_table_name(table_name)})", "SCHEMA")
       raise(ActiveRecord::StatementInvalid, "Could not find table '#{table_name}'") if structure.empty?
       table_structure_with_collation(table_name, structure)
     end
@@ -377,15 +427,18 @@ module ArJdbc
       case default
       when /^null$/i
         nil
-        # Quoted types
-      when /^'(.*)'$/m
+      # Quoted types
+      when /^'([^|]*)'$/m
         $1.gsub("''", "'")
-        # Quoted types
-      when /^"(.*)"$/m
+      # Quoted types
+      when /^"([^|]*)"$/m
         $1.gsub('""', '"')
-        # Numeric types
+      # Numeric types
       when /\A-?\d+(\.\d*)?\z/
         $&
+      # Binary columns
+      when /x'(.*)'/
+        [ $1 ].pack("H*")
       else
         # Anything else is blank or some function
         # and we can't know the value of that, so return nil.
@@ -398,7 +451,7 @@ module ArJdbc
     end
 
     def has_default_function?(default_value, default)
-      !default_value && %r{\w+\(.*\)|CURRENT_TIME|CURRENT_DATE|CURRENT_TIMESTAMP}.match?(default)
+      !default_value && %r{\w+\(.*\)|CURRENT_TIME|CURRENT_DATE|CURRENT_TIMESTAMP|\|\|}.match?(default)
     end
 
     # See: https://www.sqlite.org/lang_altertable.html
@@ -464,14 +517,24 @@ module ArJdbc
           if column.has_default?
             type = lookup_cast_type_from_column(column)
             default = type.deserialize(column.default)
+            default = -> { column.default_function } if default.nil?
           end
 
-          @definition.column(column_name, column.type,
-            limit: column.limit, default: default,
-            precision: column.precision, scale: column.scale,
-            null: column.null, collation: column.collation,
+          column_options = {
+            limit: column.limit,
+            precision: column.precision,
+            scale: column.scale,
+            null: column.null,
+            collation: column.collation,
             primary_key: column_name == from_primary_key
-          )
+          }
+
+          unless column.auto_increment?
+            column_options[:default] = default
+          end
+
+          column_type = column.bigint? ? :bigint : column.type
+          @definition.column(column_name, column_type, **column_options)
         end
 
         yield @definition if block_given?
@@ -519,8 +582,8 @@ module ArJdbc
       quoted_columns = columns.map { |col| quote_column_name(col) } * ","
       quoted_from_columns = from_columns_to_copy.map { |col| quote_column_name(col) } * ","
 
-      exec_query("INSERT INTO #{quote_table_name(to)} (#{quoted_columns})
-                     SELECT #{quoted_from_columns} FROM #{quote_table_name(from)}")
+      internal_exec_query("INSERT INTO #{quote_table_name(to)} (#{quoted_columns})
+                            SELECT #{quoted_from_columns} FROM #{quote_table_name(from)}")
     end
 
     def translate_exception(exception, message:, sql:, binds:)
@@ -530,25 +593,32 @@ module ArJdbc
       #   column *column_name* is not unique
       if exception.message.match?(/(column(s)? .* (is|are) not unique|UNIQUE constraint failed: .*)/i)
         # DIFFERENCE: FQN
-        ::ActiveRecord::RecordNotUnique.new(message, sql: sql, binds: binds)
+        ::ActiveRecord::RecordNotUnique.new(message, sql: sql, binds: binds, connection_pool: @pool)
       elsif exception.message.match?(/(.* may not be NULL|NOT NULL constraint failed: .*)/i)
         # DIFFERENCE: FQN
-        ::ActiveRecord::NotNullViolation.new(message, sql: sql, binds: binds)
+        ::ActiveRecord::NotNullViolation.new(message, sql: sql, binds: binds, connection_pool: @pool)
       elsif exception.message.match?(/FOREIGN KEY constraint failed/i)
         # DIFFERENCE: FQN
-        ::ActiveRecord::InvalidForeignKey.new(message, sql: sql, binds: binds)
+        ::ActiveRecord::InvalidForeignKey.new(message, sql: sql, binds: binds, connection_pool: @pool)
       elsif exception.message.match?(/called on a closed database/i)
         # DIFFERENCE: FQN
-        ::ActiveRecord::ConnectionNotEstablished.new(exception)
+        ::ActiveRecord::ConnectionNotEstablished.new(exception, connection_pool: @pool)
+      elsif exception.message.match?(/sql error/i)
+        ::ActiveRecord::StatementInvalid.new(message, sql: sql, binds: binds, connection_pool: @pool)
+      elsif exception.message.match?(/write a readonly database/i)
+        message = message.sub('org.sqlite.SQLiteException', 'SQLite3::ReadOnlyException')
+        ::ActiveRecord::StatementInvalid.new(message, sql: sql, binds: binds, connection_pool: @pool)
       else
         super
       end
     end
 
     COLLATE_REGEX = /.*\"(\w+)\".*collate\s+\"(\w+)\".*/i.freeze
+    PRIMARY_KEY_AUTOINCREMENT_REGEX = /.*\"(\w+)\".+PRIMARY KEY AUTOINCREMENT/i
 
     def table_structure_with_collation(table_name, basic_structure)
       collation_hash = {}
+      auto_increments = {}
       sql = <<~SQL
         SELECT sql FROM
           (SELECT * FROM sqlite_master UNION ALL
@@ -570,6 +640,7 @@ module ArJdbc
           # This regex will match the column name and collation type and will save
           # the value in $1 and $2 respectively.
           collation_hash[$1] = $2 if COLLATE_REGEX =~ column_string
+          auto_increments[$1] = true if PRIMARY_KEY_AUTOINCREMENT_REGEX =~ column_string
         end
 
         basic_structure.map do |column|
@@ -577,6 +648,10 @@ module ArJdbc
 
           if collation_hash.has_key? column_name
             column["collation"] = collation_hash[column_name]
+          end
+
+          if auto_increments.has_key?(column_name)
+            column["auto_increment"] = true
           end
 
           column
@@ -594,99 +669,86 @@ module ArJdbc
       StatementPool.new(self.class.type_cast_config_to_integer(@config[:statement_limit]))
     end
 
-    def connect
-      @connection = ::SQLite3::Database.new(
-        @config[:database].to_s,
-        @config.merge(results_as_hash: true)
-      )
+    def configure_connection
+      if @config[:timeout] && @config[:retries]
+        raise ArgumentError, "Cannot specify both timeout and retries arguments"
+      elsif @config[:timeout]
+        # FIXME: missing from adapter
+        # @raw_connection.busy_timeout(self.class.type_cast_config_to_integer(@config[:timeout]))
+      elsif @config[:retries]
+        retries = self.class.type_cast_config_to_integer(@config[:retries])
+        raw_connection.busy_handler do |count|
+          count <= retries
+        end
+      end
+
+      # Enforce foreign key constraints
+      # https://www.sqlite.org/pragma.html#pragma_foreign_keys
+      # https://www.sqlite.org/foreignkeys.html
+      raw_execute("PRAGMA foreign_keys = ON", "SCHEMA")
+      unless @memory_database
+        # Journal mode WAL allows for greater concurrency (many readers + one writer)
+        # https://www.sqlite.org/pragma.html#pragma_journal_mode
+        raw_execute("PRAGMA journal_mode = WAL", "SCHEMA")
+        # Set more relaxed level of database durability
+        # 2 = "FULL" (sync on every write), 1 = "NORMAL" (sync every 1000 written pages) and 0 = "NONE"
+        # https://www.sqlite.org/pragma.html#pragma_synchronous
+        raw_execute("PRAGMA synchronous = NORMAL", "SCHEMA")
+        # Set the global memory map so all processes can share some data
+        # https://www.sqlite.org/pragma.html#pragma_mmap_size
+        # https://www.sqlite.org/mmap.html
+        raw_execute("PRAGMA mmap_size = #{128.megabytes}", "SCHEMA")
+      end
+      # Impose a limit on the WAL file to prevent unlimited growth
+      # https://www.sqlite.org/pragma.html#pragma_journal_size_limit
+      raw_execute("PRAGMA journal_size_limit = #{64.megabytes}", "SCHEMA")
+      # Set the local connection cache to 2000 pages
+      # https://www.sqlite.org/pragma.html#pragma_cache_size
+      raw_execute("PRAGMA cache_size = 2000", "SCHEMA")
     end
 
     def configure_connection
-      # FIXME: missing from adapter
-#      @connection.busy_timeout(self.class.type_cast_config_to_integer(@config[:timeout])) if @config[:timeout]
+      if @config[:timeout] && @config[:retries]
+        raise ArgumentError, "Cannot specify both timeout and retries arguments"
+      elsif @config[:timeout]
+        # FIXME:
+#        @raw_connection.busy_timeout(self.class.type_cast_config_to_integer(@config[:timeout]))
+      elsif @config[:retries]
+        retries = self.class.type_cast_config_to_integer(@config[:retries])
+        raw_connection.busy_handler do |count|
+          count <= retries
+        end
+      end
 
-      execute("PRAGMA foreign_keys = ON", "SCHEMA")
+      # Enforce foreign key constraints
+      # https://www.sqlite.org/pragma.html#pragma_foreign_keys
+      # https://www.sqlite.org/foreignkeys.html
+      raw_execute("PRAGMA foreign_keys = ON", "SCHEMA")
+      unless @memory_database
+        # Journal mode WAL allows for greater concurrency (many readers + one writer)
+        # https://www.sqlite.org/pragma.html#pragma_journal_mode
+        raw_execute("PRAGMA journal_mode = WAL", "SCHEMA")
+        # Set more relaxed level of database durability
+        # 2 = "FULL" (sync on every write), 1 = "NORMAL" (sync every 1000 written pages) and 0 = "NONE"
+        # https://www.sqlite.org/pragma.html#pragma_synchronous
+        raw_execute("PRAGMA synchronous = NORMAL", "SCHEMA")
+        # Set the global memory map so all processes can share some data
+        # https://www.sqlite.org/pragma.html#pragma_mmap_size
+        # https://www.sqlite.org/mmap.html
+        raw_execute("PRAGMA mmap_size = #{128.megabytes}", "SCHEMA")
+      end
+      # Impose a limit on the WAL file to prevent unlimited growth
+      # https://www.sqlite.org/pragma.html#pragma_journal_size_limit
+      raw_execute("PRAGMA journal_size_limit = #{64.megabytes}", "SCHEMA")
+      # Set the local connection cache to 2000 pages
+      # https://www.sqlite.org/pragma.html#pragma_cache_size
+      raw_execute("PRAGMA cache_size = 2000", "SCHEMA")      
     end
-
   end
   # DIFFERENCE: A registration here is moved down to concrete class so we are not registering part of an adapter.
 end
 
 module ActiveRecord::ConnectionAdapters
-  class SQLite3Column < JdbcColumn
-    def initialize(name, *args)
-      if Hash === name
-        super
-      else
-        super(nil, name, *args)
-      end
-    end
-
-    def self.string_to_binary(value)
-      value
-    end
-
-    def self.binary_to_string(value)
-      if value.respond_to?(:encoding) && value.encoding != Encoding::ASCII_8BIT
-        value = value.force_encoding(Encoding::ASCII_8BIT)
-      end
-      value
-    end
-
-    # @override {ActiveRecord::ConnectionAdapters::JdbcColumn#init_column}
-    def init_column(name, default, *args)
-      if default =~ /NULL/
-        @default = nil
-      else
-        super
-      end
-    end
-
-    # @override {ActiveRecord::ConnectionAdapters::JdbcColumn#default_value}
-    def default_value(value)
-      # JDBC returns column default strings with actual single quotes :
-      return $1 if value =~ /^'(.*)'$/
-
-      value
-    end
-
-    # @override {ActiveRecord::ConnectionAdapters::Column#type_cast}
-    def type_cast(value)
-      return nil if value.nil?
-      case type
-        when :string then value
-        when :primary_key
-          value.respond_to?(:to_i) ? value.to_i : ( value ? 1 : 0 )
-        when :float    then value.to_f
-        when :decimal  then self.class.value_to_decimal(value)
-        when :boolean  then self.class.value_to_boolean(value)
-        else super
-      end
-    end
-
-    private
-
-    # @override {ActiveRecord::ConnectionAdapters::Column#extract_limit}
-    def extract_limit(sql_type)
-      return nil if sql_type =~ /^(real)\(\d+/i
-      super
-    end
-
-    def extract_precision(sql_type)
-      case sql_type
-        when /^(real)\((\d+)(,\d+)?\)/i then $2.to_i
-        else super
-      end
-    end
-
-    def extract_scale(sql_type)
-      case sql_type
-        when /^(real)\((\d+)\)/i then 0
-        when /^(real)\((\d+)(,(\d+))\)/i then $4.to_i
-        else super
-      end
-    end
-  end
 
   remove_const(:SQLite3Adapter) if const_defined?(:SQLite3Adapter)
 
@@ -701,6 +763,16 @@ module ActiveRecord::ConnectionAdapters
     include ArJdbc::Abstract::DatabaseStatements
     include ArJdbc::Abstract::StatementCache
     include ArJdbc::Abstract::TransactionSupport
+
+    ##
+    # :singleton-method:
+    # Configure the SQLite3Adapter to be used in a strict strings mode.
+    # This will disable double-quoted string literals, because otherwise typos can silently go unnoticed.
+    # For example, it is possible to create an index for a non existing column.
+    # If you wish to enable this mode you can add the following line to your application.rb file:
+    #
+    #   config.active_record.sqlite3_adapter_strict_strings_by_default = true
+    class_attribute :strict_strings_by_default, default: false # Does not actually do anything right now
 
     def self.represent_boolean_as_integer=(value) # :nodoc:
       if value == false
@@ -736,8 +808,9 @@ module ActiveRecord::ConnectionAdapters
     # SQLite driver doesn't support all types of insert statements with executeUpdate so
     # make it act like a regular query and the ids will be returned from #last_inserted_id
     # example: INSERT INTO "aircraft" DEFAULT VALUES
-    def exec_insert(sql, name = nil, binds = [], pk = nil, sequence_name = nil)
-      exec_query(sql, name, binds)
+    def exec_insert(sql, name = nil, binds = [], pk = nil, sequence_name = nil, returning: nil)
+      sql, binds = sql_for_insert(sql, pk, binds, returning)
+      internal_exec_query(sql, name, binds)
     end
 
     def jdbc_column_class
@@ -770,6 +843,16 @@ module ActiveRecord::ConnectionAdapters
     ::ActiveRecord::Type.register(:integer, SQLite3Integer, adapter: :sqlite3)
 
     class << self
+      def dbconsole(config, options = {})
+        args = []
+
+        args << "-#{options[:mode]}" if options[:mode]
+        args << "-header" if options[:header]
+        args << File.expand_path(config.database, const_defined?(:Rails) && Rails.respond_to?(:root) ? Rails.root : nil)
+
+        find_cmd_and_exec("sqlite3", *args)
+      end
+
       private
         def initialize_type_map(m)
           super

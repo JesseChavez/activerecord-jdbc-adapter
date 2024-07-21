@@ -6,6 +6,21 @@ module ArJdbc
     # This is minimum amount of code needed from base JDBC Adapter class to make common adapters
     # work.  This replaces using jdbc/adapter as a base class for all adapters.
     module Core
+
+      attr_reader :config
+
+      def initialize(config)
+        @config = config
+
+        if self.class.equal? ActiveRecord::ConnectionAdapters::JdbcAdapter
+          spec = @config.key?(:adapter_spec) ? @config[:adapter_spec] :
+                     ( @config[:adapter_spec] = adapter_spec(@config) ) # due resolving visitor
+          extend spec if spec
+        end
+
+        super(config) # AbstractAdapter
+      end
+
       # Retrieve the raw `java.sql.Connection` object.
       # The unwrap parameter is useful if an attempt to unwrap a pooled (JNDI)
       # connection should be made - to really return the 'native' JDBC object.
@@ -36,6 +51,9 @@ module ArJdbc
         # we shall not translate native "Java" exceptions as they might
         # swallow an ArJdbc / driver bug into an AR::StatementInvalid !
         return exception if exception.is_a?(Throwable)
+
+        # We create this exception in Java where we do not have access to the pool
+        exception.instance_variable_set(:@connection_pool, @pool) if exception.kind_of?(::ActiveRecord::JDBCError)
 
         case exception
           when SystemExit, SignalException, NoMemoryError then exception

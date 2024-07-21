@@ -27,7 +27,7 @@ jobs:
         ruby-version: ['jruby-head']
         db: ['mysql2']
         test_targets: ["rails:test_mysql2"]
-        ar_version: ["7-0-stable"]
+        ar_version: ["7-1-stable"]
         prepared_statements: ['false', 'true']
         driver: ['MySQL']
 
@@ -45,7 +45,7 @@ jobs:
       JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -79,7 +79,7 @@ jobs:
         ruby-version: [ 'jruby-head' ]
         db: [ 'postgresql' ]
         test_targets: [ "rails:test_postgresql" ]
-        ar_version: ["7-0-stable"]
+        ar_version: ["7-1-stable"]
         prepared_statements: [ 'false', 'true' ]
 
     services:
@@ -102,7 +102,7 @@ jobs:
       PGUSER: postgres
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -129,7 +129,7 @@ jobs:
         ruby-version: ['jruby-head']
         db: ['sqlite3']
         test_targets: ["rails:test_sqlite3"]
-        ar_version: ["7-0-stable"]
+        ar_version: ["7-1-stable", "main"]
 
     env:
       DB: ${{ matrix.db }}
@@ -137,7 +137,7 @@ jobs:
       JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -179,7 +179,7 @@ jobs:
       PREPARED_STATEMENTS: ${{ matrix.prepared_statements }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -230,7 +230,7 @@ jobs:
       PGUSER: postgres
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -256,10 +256,10 @@ jobs:
 
     env:
       DB: ${{ matrix.db }}
-      JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M"
+      JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M --dev"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
