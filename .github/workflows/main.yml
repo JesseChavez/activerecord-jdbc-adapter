@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby-version: ['jruby-9.4.2.0']
+        ruby-version: ['jruby-9.4.8.0']
         db: ['mssql']
         test_targets: ['test_mssql']
 
@@ -75,7 +75,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby-version: [ 'jruby-9.4.2.0' ]
+        ruby-version: [ 'jruby-9.4.8.0' ]
         db: [ 'postgresql' ]
         test_targets: [ "rails:test_postgresql" ]
         ar_version: ["7-0-stable"]
@@ -126,7 +126,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby-version: ['jruby-9.4.2.0']
+        ruby-version: ['jruby-9.4.8.0']
         db: ['postgresql']
         test_targets: ["db:postgresql test_postgresql"]
         prepared_statements: ['false', 'true']
