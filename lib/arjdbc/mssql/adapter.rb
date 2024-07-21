@@ -38,7 +38,7 @@ module ActiveRecord
 
       # include Jdbc::ConnectionPoolCallbacks
       include ArJdbc::Abstract::Core
-      # include ArJdbc::Abstract::ConnectionManagement
+      include ArJdbc::Abstract::ConnectionManagement
       # include ArJdbc::Abstract::DatabaseStatements
       # include ArJdbc::Abstract::StatementCache
       # include ArJdbc::Abstract::TransactionSupport
@@ -438,13 +438,13 @@ module ActiveRecord
         raise ex.set_pool(@pool)
       end
 
-      def reconnect
-        @raw_connection&.disconnect!
+      # def reconnect
+      #   @raw_connection&.disconnect!
 
-        @raw_connection = nil
+      #   @raw_connection = nil
 
-        connect
-      end
+      #   connect
+      # end
 
       def type_map
         TYPE_MAP

@@ -16,6 +16,8 @@ class MSSQLConnectionTest < Test::Unit::TestCase
     @connection.disconnect!
 
     assert_equal false, @connection.active?
+  ensure
+    @connection.reconnect!
   end
 
   def test_execute_after_disconnect
@@ -24,12 +26,12 @@ class MSSQLConnectionTest < Test::Unit::TestCase
 
     @connection.disconnect!
 
-    error = assert_raises(ActiveRecord::ConnectionNotEstablished) do
-      @connection.execute('SELECT 1')
+    # active record change of behaviour in rails 7.0, reconnects on query exec.
+    result = assert_nothing_raised do
+      @connection.execute('SELECT 1 + 2')
     end
 
-    assert_kind_of ActiveRecord::ConnectionNotEstablished, error.cause
-    assert_not_nil error.cause
+    assert_equal 3, result.rows.flatten.first
   end
 
   def test_reconnect

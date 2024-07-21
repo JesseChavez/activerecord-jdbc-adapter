@@ -3,29 +3,32 @@
 module ArJdbc
   module Abstract
     module ConnectionManagement
-
       # @override
       def active?
-        return unless @connection
-        @connection.active?
-      end
+        super
 
-      def really_valid?
-        return unless @connection
-        @connection.really_valid?
-      end
+        return unless @raw_connection
 
-      # @override
-      def reconnect!
-        super # clear_cache! && reset_transaction
-        @connection.reconnect! # handles adapter.configure_connection
+        @raw_connection.active?
       end
 
       # @override
       def disconnect!
         super # clear_cache! && reset_transaction
-        return unless @connection
-        @connection.disconnect!
+        return unless @raw_connection
+
+        @raw_connection.disconnect!
+      end
+
+      private
+
+      # @override
+      def reconnect
+        @raw_connection&.disconnect!
+
+        @raw_connection = nil
+
+        connect
       end
 
       # @override
@@ -36,7 +39,6 @@ module ArJdbc
       #    reconnect! unless active? # super
       #  end
       # end
-
     end
   end
 end
