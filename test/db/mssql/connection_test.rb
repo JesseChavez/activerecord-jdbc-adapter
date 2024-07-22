@@ -6,7 +6,7 @@ class MSSQLConnectionTest < Test::Unit::TestCase
   end
 
   def teardown
-    ActiveRecord::Base.clear_active_connections!
+    ActiveRecord::Base.connection_handler.clear_active_connections!(:all)
   end
 
   def test_active_after_disconnect

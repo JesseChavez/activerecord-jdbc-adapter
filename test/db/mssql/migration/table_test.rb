@@ -11,7 +11,7 @@ module MSSQLMigration
     [:wagons, :trains].each do |table|
       ActiveRecord::Base.connection.drop_table table, if_exists: true
     end
-    ActiveRecord::Base.clear_active_connections!
+    ActiveRecord::Base.connection_handler.clear_active_connections!(:all)
   end
 
   def test_create_table_with_force_cascade_drops_dependent_objects

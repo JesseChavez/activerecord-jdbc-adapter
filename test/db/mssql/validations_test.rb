@@ -29,7 +29,7 @@ class MSSQLValidationTest < Test::Unit::TestCase
 
   def teardown
     CreateValidationTests.down
-    ActiveRecord::Base.clear_active_connections!
+    ActiveRecord::Base.connection_handler.clear_active_connections!(:all)
   end
 
   def test_validate_case_sensitive_uniqueness

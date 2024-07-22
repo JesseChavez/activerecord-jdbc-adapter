@@ -31,7 +31,7 @@ class MSSQLInsertTest < Test::Unit::TestCase
 
   def self.shutdown
     CreateInsertEntries.down
-    ActiveRecord::Base.clear_active_connections!
+    ActiveRecord::Base.connection_handler.clear_active_connections!(:all)
   end
 
   def test_create

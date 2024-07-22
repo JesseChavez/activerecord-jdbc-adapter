@@ -89,7 +89,7 @@ class MSSQLFinderAndAssociationTest < Test::Unit::TestCase
 
   def self.shutdown
     CreateSimpleSchema.down
-    ActiveRecord::Base.clear_active_connections!
+    ActiveRecord::Base.connection_handler.clear_active_connections!(:all)
   end
 
   def test_find_with_eager_loading_collection_and_ordering_by_collection_primary_key

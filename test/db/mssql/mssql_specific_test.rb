@@ -37,7 +37,7 @@ class MSSQLSpecificTest < Test::Unit::TestCase
     ActiveRecord::ConnectionAdapters::MSSQLAdapter
       .any_instance.stubs(:mssql_version).returns(mssql_version)
 
-    ActiveRecord::Base.clear_all_connections!
+    ActiveRecord::Base.connection_handler.clear_all_connections!(:all)
 
     conn = ActiveRecord::Base.connection
 
@@ -63,7 +63,7 @@ class MSSQLSpecificTest < Test::Unit::TestCase
     ActiveRecord::ConnectionAdapters::MSSQLAdapter
       .any_instance.stubs(:mssql_version).returns(mssql_version)
 
-    ActiveRecord::Base.clear_all_connections!
+    ActiveRecord::Base.connection_handler.clear_all_connections!(:all)
 
     assert_nothing_raised do
       ActiveRecord::Base.connection.execute('SELECT 1')

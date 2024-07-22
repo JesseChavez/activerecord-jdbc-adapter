@@ -40,7 +40,7 @@ class MSSQLIdentityInsertTest < Test::Unit::TestCase
 
   def self.shutdown
     CreateIdentityInsertEntries.down
-    ActiveRecord::Base.clear_active_connections!
+    ActiveRecord::Base.connection_handler.clear_active_connections!(:all)
   end
 
   def test_table_name_is_keyword

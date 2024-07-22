@@ -30,7 +30,7 @@ class MSSQLMultibyteTest < Test::Unit::TestCase
 
   def teardown
     CreateMultibyteEntries.down
-    ActiveRecord::Base.clear_active_connections!
+    ActiveRecord::Base.connection_handler.clear_active_connections!(:all)
   end
 
   def test_select_multibyte_string

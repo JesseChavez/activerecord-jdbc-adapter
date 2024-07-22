@@ -30,7 +30,7 @@ class MSSQLMultipleConnectionsTest < Test::Unit::TestCase
 
     def self.startup
       super
-      ActiveRecord::Base.clear_active_connections!
+      ActiveRecord::Base.connection_handler.clear_active_connections!(:all)
 
       Database1.establish_connection MSSQL_CONFIG
       Database2.establish_connection MSSQL_CONFIG2
@@ -45,7 +45,7 @@ class MSSQLMultipleConnectionsTest < Test::Unit::TestCase
       Database1.connection.execute "DROP TABLE [model1s]"
       Database2.connection.execute "DROP TABLE [model2s]"
 
-      ActiveRecord::Base.clear_active_connections!
+      ActiveRecord::Base.connection_handler.clear_active_connections!(:all)
 
       ActiveRecord::Base.configurations.replace OLD_CONFIG
       ActiveRecord::Base.establish_connection MSSQL_CONFIG

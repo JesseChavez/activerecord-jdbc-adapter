@@ -25,7 +25,7 @@ class MSSQLColumnPrimaryKeysTest < Test::Unit::TestCase
 
   def self.shutdown
     CreatePrimaryKeysTests.down
-    ActiveRecord::Base.clear_active_connections!
+    ActiveRecord::Base.connection_handler.clear_active_connections!(:all)
   end
 
   def test_custom_primary_key

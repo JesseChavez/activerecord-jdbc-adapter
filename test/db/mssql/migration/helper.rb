@@ -54,7 +54,7 @@ module MSSQLMigration
 
     def teardown
       CreateColumnModifications.down
-      ActiveRecord::Base.clear_active_connections!
+      ActiveRecord::Base.connection_handler.clear_active_connections!(:all)
     end
 
     private

@@ -27,7 +27,7 @@ class MSSQLExtensionsTest < Test::Unit::TestCase
 
   def self.shutdown
     CreateAccounts.down
-    ActiveRecord::Base.clear_active_connections!
+    ActiveRecord::Base.connection_handler.clear_active_connections!(:all)
   end
 
   def test_attributes_for_update_override_create_with_after_create_callback

@@ -30,7 +30,7 @@ class MSSQLColumnDateAndTimeTypesTest < Test::Unit::TestCase
 
   def self.shutdown
     CreateDateAndTimeTypes.down
-    ActiveRecord::Base.clear_active_connections!
+    ActiveRecord::Base.connection_handler.clear_active_connections!(:all)
   end
 
   Type = ActiveRecord::ConnectionAdapters::MSSQL::Type

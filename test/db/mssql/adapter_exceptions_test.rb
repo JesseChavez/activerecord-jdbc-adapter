@@ -42,7 +42,7 @@ class MSSQLExceptionsTest < Test::Unit::TestCase
 
   def teardown
     CreateSystemExceptions.down
-    ActiveRecord::Base.clear_active_connections!
+    ActiveRecord::Base.connection_handler.clear_active_connections!(:all)
   end
 
   def test_uniqueness_violations_are_translated_to_specific_exception
