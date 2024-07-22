@@ -53,6 +53,26 @@ module ActiveRecord
 
       class << self
         attr_accessor :cs_equality_operator
+
+        # Returns the (JDBC) connection class to be used for this adapter.
+        # The class is defined in the java part
+        def jdbc_connection_class
+          ::ActiveRecord::ConnectionAdapters::MSSQLJdbcConnection
+        end
+
+        def new_client(conn_params, adapter_instance)
+          jdbc_connection_class.new(conn_params, adapter_instance)
+        rescue ActiveRecord::JDBCError => error
+          if conn_params && conn_params[:database] && error.message.include?(conn_params[:database])
+            raise ActiveRecord::NoDatabaseError.db_error(conn_params[:database])
+          elsif conn_params && conn_params[:username] && error.message.include?(conn_params[:username])
+            raise ActiveRecord::DatabaseConnectionError.username_error(conn_params[:username])
+          elsif conn_params && conn_params[:host] && error.message.include?(conn_params[:host])
+            raise ActiveRecord::DatabaseConnectionError.hostname_error(conn_params[:host])
+          else
+            raise ActiveRecord::ConnectionNotEstablished, error.message
+          end
+        end
       end
 
       def initialize(...)
@@ -77,23 +97,6 @@ module ActiveRecord
       def disconnect!
         super # clear_cache! && reset_transaction
         @raw_connection&.disconnect!
-      end
-
-      def self.database_exists?(config)
-        !!ActiveRecord::Base.sqlserver_connection(config)
-      rescue ActiveRecord::JDBCError => e
-        case e.message
-        when /Cannot open database .* requested by the login/
-          false
-        else
-          raise
-        end
-      end
-
-      # Returns the (JDBC) connection class to be used for this adapter.
-      # The class is defined in the java part
-      def jdbc_connection_class
-        ::ActiveRecord::ConnectionAdapters::MSSQLJdbcConnection
       end
 
       # Returns the (JDBC) `ActiveRecord` column class for this adapter.
@@ -446,7 +449,7 @@ module ActiveRecord
       private
 
       def connect
-        @raw_connection = jdbc_connection_class.new(@connection_parameters, self)
+        @raw_connection = self.class.new_client(@connection_parameters, self)
       rescue ConnectionNotEstablished => ex
         raise ex.set_pool(@pool)
       end
