@@ -133,6 +133,7 @@ module ActiveRecord
 
           mark_transaction_written_if_write(sql)
 
+          # puts "exec_update----->sql: #{sql}, binds: #{binds}"
           if without_prepared_statement?(binds)
             log(sql, name) do
               with_raw_connection do |conn|
@@ -153,6 +154,37 @@ module ActiveRecord
         end
         alias :exec_delete :exec_update
 
+        def exec_insert(sql, name = nil, binds = [], pk = nil, sequence_name = nil, returning: nil)
+          sql = transform_query(sql)
+
+          check_if_write_query(sql)
+
+          mark_transaction_written_if_write(sql)
+
+          # puts "exec_insert----->sql: #{sql}, binds: #{binds}"
+          if without_prepared_statement?(binds)
+            log(sql, name) do
+              with_raw_connection do |conn|
+                result = conditional_indentity_insert(sql) do
+                  conn.execute_insert_pk(sql, pk)
+                end
+                verified!
+                result
+              end
+            end
+          else
+            log(sql, name, binds) do
+              with_raw_connection do |conn|
+                result = conditional_indentity_insert(sql) do
+                  conn.execute_insert_pk(sql, binds, pk)
+                end
+                verified!
+                result
+              end
+            end
+          end
+        end
+
         private
 
         def raw_execute(sql, name, async: false, allow_retry: false, materialize_transactions: true)
@@ -167,6 +199,10 @@ module ActiveRecord
         end
 
         def sql_for_insert(sql, pk, binds, returning) # :nodoc:
+          return [sql, binds]
+
+          # TODO: Add/Implement and support for insert returning values when
+          # upgrading to rails 7.2
           return [sql, binds] unless supports_insert_returning?
 
           if pk.nil?
