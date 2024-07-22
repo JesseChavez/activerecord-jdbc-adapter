@@ -126,6 +126,33 @@ module ActiveRecord
           end
         end
 
+        def exec_update(sql, name = nil, binds = [])
+          sql = transform_query(sql)
+
+          check_if_write_query(sql)
+
+          mark_transaction_written_if_write(sql)
+
+          if without_prepared_statement?(binds)
+            log(sql, name) do
+              with_raw_connection do |conn|
+                result = conn.execute_update(sql)
+                verified!
+                result
+              end
+            end
+          else
+            log(sql, name, binds) do
+              with_raw_connection do |conn|
+                result = conn.execute_prepared_update(sql, binds)
+                verified!
+                result
+              end
+            end
+          end
+        end
+        alias :exec_delete :exec_update
+
         private
 
         def raw_execute(sql, name, async: false, allow_retry: false, materialize_transactions: true)
