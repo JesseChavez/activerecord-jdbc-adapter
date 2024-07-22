@@ -17,7 +17,7 @@ module ActiveRecord
           !DISABLED
         end
 
-        def explain(arel, binds = [])
+        def explain(arel, binds = [], options = [])
           return if DISABLED
 
           if arel.respond_to?(:to_sql)
@@ -25,12 +25,15 @@ module ActiveRecord
           else
             raw_sql, raw_binds = arel, binds
           end
+
           # sql = to_sql(arel, binds)
           # result = with_showplan_on { exec_query(sql, 'EXPLAIN', binds) }
-           sql = interpolate_sql_statement(raw_sql, raw_binds)
-           result = with_showplan_on do
-             exec_query(sql, 'EXPLAIN', [])
-           end
+
+          sql = interpolate_sql_statement(raw_sql, raw_binds)
+
+          result = with_showplan_on do
+            exec_query(sql, 'EXPLAIN', [])
+          end
           PrinterTable.new(result).pp
         end
 
