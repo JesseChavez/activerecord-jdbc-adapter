@@ -29,6 +29,7 @@ module ActiveRecord
       def identity?
         sql_type.downcase.include? 'identity'
       end
+      alias_method :auto_incremented_by_db?, :identity?
 
       def ==(other)
         other.is_a?(MSSQLColumn) &&
