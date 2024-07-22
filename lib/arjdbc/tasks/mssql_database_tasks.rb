@@ -5,10 +5,6 @@ require 'active_record/tasks/database_tasks'
 module ArJdbc
   module Tasks # :nodoc:
     class MSSQLDatabaseTasks # :nodoc:
-      delegate :connection, to: ActiveRecord::Base
-      delegate :establish_connection, to: ActiveRecord::Base
-      delegate :clear_active_connections!, to: ActiveRecord::Base
-
       def self.using_database_configurations?
         true
       end
@@ -45,7 +41,7 @@ module ArJdbc
       end
 
       def purge
-        clear_active_connections!
+        ActiveRecord::Base.connection_handler.clear_active_connections!(:all)
         drop
         create
       end
@@ -69,6 +65,14 @@ module ArJdbc
       private
 
       attr_reader :db_config, :configuration_hash
+
+      def connection
+        ActiveRecord::Base.connection
+      end
+
+      def establish_connection(config = db_config)
+        ActiveRecord::Base.establish_connection(config)
+      end
 
       def creation_options
         {}.tap do |options|
