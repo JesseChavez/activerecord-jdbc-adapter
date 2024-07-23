@@ -132,7 +132,7 @@ connections:
       database: jdbc_arunit2
       host: localhost
       adapter:  sqlserver
-      username: arjdbc
-      password: password
+      username: <%= ENV['SQLUSER'] || 'arjdbc' %>
+      password: <%= ENV['SQLPASS'] || 'password' %>
       prepared_statements: true
       trust_server_certificate: true
