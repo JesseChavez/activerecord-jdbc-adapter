@@ -18,6 +18,7 @@ module ActiveRecord
           string:         { name: 'nvarchar', limit: 4000 },
           text:           { name: 'nvarchar(max)' },
           binary:         { name: 'varbinary(max)' },
+          json:           { name: 'nvarchar(max)' },
           # Other types or SQL Server specific
           bigint:         { name: 'bigint' },
           smalldatetime:  { name: 'smalldatetime' },

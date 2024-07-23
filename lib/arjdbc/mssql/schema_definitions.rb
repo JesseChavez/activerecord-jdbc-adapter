@@ -70,6 +70,10 @@ module ActiveRecord
         def uuid(*args, **options)
           args.each { |name| column(name, :uniqueidentifier, **options) }
         end
+
+        def json(*names, **options)
+          names.each { |name| column(name, :text, **options) }
+        end
       end
 
       class TableDefinition < ActiveRecord::ConnectionAdapters::TableDefinition
