@@ -143,6 +143,59 @@ jobs:
         run: |
           bundle exec rake ${{ matrix.test_targets }}
 
+  test-rails-pgsql:
+
+    name: Rails Tests (mssql)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby-version: [ 'jruby-9.4.8.0' ]
+        db: [ 'postgresql' ]
+        test_targets: [ "rails:test_mssql" ]
+        ar_version: ["7-1-stable-dev"]
+
+    services:
+      postgres:
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: Password12!
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd="/opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P \"Password12!\" -l 30 -Q \"SELECT 1\""
+          --health-start-period 10s
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DB: ${{ matrix.db }}
+      AR_VERSION: ${{ matrix.ar_version }}
+      JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M"
+      JDBC_SQLITE_VERSION: "3.32.3.3"
+      SQLUSER: SA
+      SQLPASS: Password12!
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby-version }}
+          bundler-cache: true # runs 'bundle install' and caches installed gems automatically
+      - name: Setup database
+        run: |
+          /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Password12!" -Q "CREATE DATABASE activerecord_unittest;"
+          /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Password12!" -Q "CREATE DATABASE activerecord_unittest2;"
+      - name: Build
+        run: |
+          rake jar # compiles ext generates: lib/arjdbc/jdbc/adapter_java.jar
+      - name: Run tests
+        run: |
+          bundle exec rake ${{ matrix.test_targets }}
+
   test-rails-sqlite:
 
     name: Rails Tests (SQLite)

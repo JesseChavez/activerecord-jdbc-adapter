@@ -34,7 +34,7 @@ elsif ENV['AR_VERSION'] # Use specific version of AR and not .gemspec version
         opts = {branch: version}
       end
 
-      git 'https://github.com/rails/rails.git', **opts do
+      git 'https://github.com/JesseChavez/rails.git', **opts do
         gem 'activerecord', require: false
         gem 'activemodel', require: false
         gem 'activesupport', require: false
