@@ -124,8 +124,8 @@ connections:
       database: jdbc_arunit
       host: localhost
       adapter:  sqlserver
-      username: arjdbc
-      password: password
+      username: <%= ENV['SQLUSER'] || 'arjdbc' %>
+      password: <%= ENV['SQLPASS'] || 'password' %>
       prepared_statements: true
       trust_server_certificate: true
     arunit2:

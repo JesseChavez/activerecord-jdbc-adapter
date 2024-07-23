@@ -151,7 +151,7 @@ jobs:
       fail-fast: false
       matrix:
         ruby-version: [ 'jruby-9.4.8.0' ]
-        db: [ 'postgresql' ]
+        db: [ 'mssql' ]
         test_targets: [ "rails:test_mssql" ]
         ar_version: ["7-1-stable-dev"]
 
@@ -186,7 +186,9 @@ jobs:
           ruby-version: ${{ matrix.ruby-version }}
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
       - name: Setup database
-        run: /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Password12!" -Q "CREATE DATABASE activerecord_unittest;CREATE DATABASE activerecord_unittest2;"
+        run: |
+          /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Password12!" -Q "CREATE DATABASE activerecord_unittest;"
+          /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "Password12!" -Q "CREATE DATABASE activerecord_unittest2;"
       - name: Build
         run: |
           rake jar # compiles ext generates: lib/arjdbc/jdbc/adapter_java.jar
