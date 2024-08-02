@@ -23,7 +23,7 @@ module ActiveRecord
     class Mysql2Adapter < AbstractMysqlAdapter
       ADAPTER_NAME = 'Mysql2'
 
-      include Jdbc::ConnectionPoolCallbacks
+      # include Jdbc::ConnectionPoolCallbacks
 
       include ArJdbc::Abstract::ConnectionManagement
       include ArJdbc::Abstract::DatabaseStatements
@@ -32,6 +32,16 @@ module ActiveRecord
       include ArJdbc::Abstract::TransactionSupport
 
       include ArJdbc::MySQL
+
+      class << self
+        def jdbc_connection_class
+          ::ActiveRecord::ConnectionAdapters::MySQLJdbcConnection
+        end
+
+        def new_client(conn_params, adapter_instance)
+          jdbc_connection_class.new(conn_params, adapter_instance)
+        end
+      end
 
       def initialize(...)
         super
@@ -47,6 +57,11 @@ module ActiveRecord
 
         @connection_parameters ||= @config
       end
+
+      # NOTE: redefines constant defined in abstract class however this time
+      # will use methods defined in the mysql abstract class and map properly
+      # mysql types.
+      TYPE_MAP = Type::TypeMap.new.tap { |m| initialize_type_map(m) }
 
       def self.database_exists?(config)
         conn = ActiveRecord::Base.mysql2_connection(config)
@@ -221,12 +236,19 @@ module ActiveRecord
         @full_version ||= any_raw_connection.full_version
       end
 
-      def jdbc_connection_class(spec)
-        ::ActiveRecord::ConnectionAdapters::MySQLJdbcConnection
-      end
-
       def jdbc_column_class
         ::ActiveRecord::ConnectionAdapters::MySQL::Column
+      end
+
+      def translate_exception(exception, message:, sql:, binds:)
+        case message
+        when /Table .* doesn't exist/i
+          StatementInvalid.new(message, sql: sql, binds: binds, connection_pool: @pool)
+        when /BLOB, TEXT, GEOMETRY or JSON column .* can't have a default value/i
+          StatementInvalid.new(message, sql: sql, binds: binds, connection_pool: @pool)
+        else
+          super
+        end
       end
 
       # defined in MySQL::DatabaseStatements which is not included
