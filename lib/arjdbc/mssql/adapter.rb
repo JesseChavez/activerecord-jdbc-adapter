@@ -495,6 +495,10 @@ module ActiveRecord
           RangeError.new(message, sql: sql, binds: binds)
         when /Snapshot isolation transaction aborted due to update conflict. You cannot use snapshot isolation/
           StatementInvalid.new(message, sql: sql, binds: binds)
+        when /Incorrect syntax near the keyword .*/
+          StatementInvalid.new(message, sql: sql, binds: binds)
+        when /Could not find stored procedure .*/
+          StatementInvalid.new(message, sql: sql, binds: binds)
         else
           super
         end
