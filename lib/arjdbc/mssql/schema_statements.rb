@@ -174,9 +174,12 @@ module ActiveRecord
           end
         end
 
-        def rename_table(table_name, new_table_name)
-          execute "EXEC sp_rename '#{table_name}', '#{new_table_name}'"
-          rename_table_indexes(table_name, new_table_name)
+        def rename_table(table_name, new_name, **options)
+          validate_table_length!(new_name) unless options[:_uses_legacy_table_name]
+          schema_cache.clear_data_source_cache!(table_name.to_s)
+          schema_cache.clear_data_source_cache!(new_name.to_s)
+          execute "EXEC sp_rename '#{table_name}', '#{new_name}'"
+          rename_table_indexes(table_name, new_name)
         end
 
         # This is the same as the abstract method
