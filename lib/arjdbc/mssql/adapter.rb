@@ -88,15 +88,20 @@ module ActiveRecord
 
       # @override
       def active?
-        return false unless @raw_connection
+        @lock.synchronize do
+          return false unless @raw_connection
 
-        @raw_connection.active?
+          @raw_connection.active?
+        end
       end
 
       # @override
       def disconnect!
-        super # clear_cache! && reset_transaction
-        @raw_connection&.disconnect!
+        @lock.synchronize do
+          super # clear_cache! && reset_transaction
+          @raw_connection&.disconnect!
+          @raw_connection = nil
+        end
       end
 
       # Returns the (JDBC) `ActiveRecord` column class for this adapter.
