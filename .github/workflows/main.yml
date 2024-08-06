@@ -31,9 +31,12 @@ jobs:
         db: ['mssql']
         test_targets: ['test_mssql']
 
+    # NOTE: using a specific tag, it fails with 2019-latest.
+    # it seems the issue is related to some changes in mssql tools
+    # https://learn.microsoft.com/en-au/answers/questions/1853144/error-failed-to-initialize-container-mcr-microsoft
     services:
       mssql:
-        image: mcr.microsoft.com/mssql/server:2019-latest
+        image: mcr.microsoft.com/mssql/server:2019-CU27-ubuntu-20.04
         env:
           ACCEPT_EULA: Y
           MSSQL_SA_PASSWORD: Password12!
