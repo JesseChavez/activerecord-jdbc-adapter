@@ -27,10 +27,10 @@ module ActiveRecord
       module RealTransactionExt
         attr_reader :initial_transaction_isolation
 
-        def initialize(connection, options, *args)
+        def initialize(connection, isolation: nil, joinable: true, run_commit_callbacks: false)
           @connection = connection
 
-          if options[:isolation]
+          if isolation
             @initial_transaction_isolation = current_transaction_isolation
           end
 
