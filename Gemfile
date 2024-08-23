@@ -50,19 +50,19 @@ end
 gem 'rake', '>= 11.1', require: nil
 
 group :test do
-  gem 'test-unit', '~> 2.5.4', require: nil
-  gem 'test-unit-context', '>= 0.4.0', require: nil
+  gem 'test-unit', require: nil
+  gem 'test-unit-context', require: nil
   gem 'mocha', '~> 1.2', require: false # Rails has '~> 0.14'
 
   gem 'bcrypt', '~> 3.1.11', require: false
-  gem 'jdbc-mssql', '~> 0.9.0', require: nil
+  gem 'jdbc-mssql', '~> 12.2.0', require: nil
   # gem 'pry-debugger-jruby', platform: :jruby
 end
 
 group :rails do
   group :test do
-    gem 'minitest', '~> 5.12.2', require: nil
-    gem 'minitest-excludes', '~> 2.0.1', require: nil
+    gem 'minitest', require: nil
+    gem 'minitest-excludes', require: nil
     gem 'minitest-rg', require: nil
 
     gem 'benchmark-ips', require: nil
