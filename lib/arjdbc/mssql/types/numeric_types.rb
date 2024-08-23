@@ -35,7 +35,7 @@ module ActiveRecord
         end
 
         class Money < Decimal
-          def initialize(options = {})
+          def initialize(**options)
             super
             @precision = 19
             @scale = 4
@@ -46,7 +46,7 @@ module ActiveRecord
         end
 
         class SmallMoney < Decimal
-          def initialize(options = {})
+          def initialize(**options)
             super
             @precision = 10
             @scale = 4
