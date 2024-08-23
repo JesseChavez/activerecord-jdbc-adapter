@@ -248,7 +248,7 @@ module ActiveRecord
           (order_columns << super).join(', ')
         end
 
-        def add_timestamps(table_name, options = {})
+        def add_timestamps(table_name, **options)
           if !options.key?(:precision) && supports_datetime_with_precision?
             options[:precision] = 7
           end
