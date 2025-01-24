@@ -27,7 +27,7 @@ jobs:
         ruby-version: ['jruby-head']
         db: ['mysql2']
         test_targets: ["rails:test_mysql2"]
-        ar_version: ["7-1-stable"]
+        ar_version: ["7-2-stable"]
         prepared_statements: ['false', 'true']
         driver: ['MySQL']
 
@@ -42,7 +42,7 @@ jobs:
       AR_VERSION: ${{ matrix.ar_version }}
       PREPARED_STATEMENTS: ${{ matrix.prepared_statements }}
       DRIVER: ${{ matrix.driver }}
-      JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M"
+      JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M --dev"
 
     steps:
       - uses: actions/checkout@v4
@@ -79,7 +79,7 @@ jobs:
         ruby-version: [ 'jruby-head' ]
         db: [ 'postgresql' ]
         test_targets: [ "rails:test_postgresql" ]
-        ar_version: ["7-1-stable"]
+        ar_version: ["7-2-stable"]
         prepared_statements: [ 'false', 'true' ]
 
     services:
@@ -95,7 +95,7 @@ jobs:
     env:
       DB: ${{ matrix.db }}
       AR_VERSION: ${{ matrix.ar_version }}
-      JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M"
+      JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M --dev"
       PREPARED_STATEMENTS: ${{ matrix.prepared_statements }}
       PGHOST: localhost
       PGPORT: 5432
@@ -129,12 +129,12 @@ jobs:
         ruby-version: ['jruby-head']
         db: ['sqlite3']
         test_targets: ["rails:test_sqlite3"]
-        ar_version: ["7-1-stable", "main"]
+        ar_version: ["7-2-stable"]
 
     env:
       DB: ${{ matrix.db }}
       AR_VERSION: ${{ matrix.ar_version }}
-      JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M"
+      JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M --dev"
 
     steps:
       - uses: actions/checkout@v4
@@ -149,7 +149,7 @@ jobs:
           rake jar # compiles ext generates: lib/arjdbc/jdbc/adapter_java.jar
       - name: Run tests
         run: |
-          bundle exec rake ${{ matrix.test_targets }}
+          bundle exec rake ${{ matrix.test_targets }} --trace
 
   test-arjdbc-mysql:
 
@@ -173,7 +173,7 @@ jobs:
     env:
       DB: ${{ matrix.db }}
       DRIVER: ${{ matrix.driver }}
-      JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M"
+      JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M --dev"
       MY_USER: root
       MY_PASSWORD: root
       PREPARED_STATEMENTS: ${{ matrix.prepared_statements }}
@@ -222,7 +222,7 @@ jobs:
     env:
       DB: ${{ matrix.db }}
       DRIVER: ${{ matrix.driver }}
-      JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M"
+      JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M --dev"
       PREPARED_STATEMENTS: ${{ matrix.prepared_statements }}
       INSERT_RETURNING: ${{ matrix.insert_returning }}
       PGHOST: localhost
