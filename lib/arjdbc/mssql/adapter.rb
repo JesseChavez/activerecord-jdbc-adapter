@@ -30,6 +30,8 @@ require 'arjdbc/mssql/errors'
 require 'arjdbc/mssql/schema_creation'
 require 'arjdbc/mssql/database_limits'
 
+require "arjdbc/abstract/relation_query_attribute_monkey_patch"
+
 module ActiveRecord
   module ConnectionAdapters
     # MSSQL (SQLServer) adapter class definition
