@@ -21,7 +21,7 @@ class MSSQLSerializeTest < Test::Unit::TestCase
   end
 
   def test_serialized_with_json_coder
-    Topic.serialize(:content, JSON)
+    Topic.serialize(:content, coder: JSON)
     value = {
       'name' => 'Joe',
       'age' => 23,
@@ -38,7 +38,7 @@ class MSSQLSerializeTest < Test::Unit::TestCase
 
 
   def test_serialized_with_json_coder_simple_types
-    Topic.serialize(:content, JSON)
+    Topic.serialize(:content, code: JSON)
 
     topic = Topic.new(:content => nil)
     assert topic.save
@@ -56,7 +56,7 @@ class MSSQLSerializeTest < Test::Unit::TestCase
   end
 
   def test_serialized_as_array
-    Topic.serialize(:content, Array)
+    Topic.serialize(:content, type: Array)
 
     value = [1, 3.14, 'hola', true]
 
