@@ -12,6 +12,12 @@ if defined?(JRUBY_VERSION)
   rescue LoadError => e
     warn "activerecord-jdbc-adapter failed to load railtie: #{e.inspect}"
   end if defined?(Rails) && ActiveRecord::VERSION::MAJOR >= 3
+
+  ActiveSupport.on_load(:active_record) do
+    ActiveRecord::ConnectionAdapters.register(
+      "sqlserver", "ActiveRecord::ConnectionAdapters::MSSQLAdapter", "active_record/connection_adapters/mssql_adapter"
+    )
+  end
 else
   warn "activerecord-jdbc-adapter is for use with JRuby only"
 end
