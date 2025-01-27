@@ -188,10 +188,11 @@ class MSSQLColumnDateAndTimeTypesTest < Test::Unit::TestCase
   end
 
   def dump_table_schema(table)
+    pool = ActiveRecord::Base.connection_pool
     all_tables = ActiveRecord::Base.connection.tables
     ActiveRecord::SchemaDumper.ignore_tables = all_tables - [table]
     stream = StringIO.new
-    ActiveRecord::SchemaDumper.dump(ActiveRecord::Base.connection, stream)
+    ActiveRecord::SchemaDumper.dump(pool, stream)
     stream.string
   end
 end
