@@ -182,20 +182,8 @@ module ActiveRecord
           rename_table_indexes(table_name, new_name)
         end
 
-        # This is the same as the abstract method
-        def quote_table_name(name)
-          quote_column_name(name)
-        end
-
-        # This overrides the abstract method to be specific to SQL Server.
-        def quote_column_name(name)
-          name = name.to_s.split('.')
-          name.map! { |n| quote_name_part(n) } # "[#{name}]"
-          name.join('.')
-        end
-
         def quote_database_name(name)
-          quote_name_part(name.to_s)
+          self.class.mssql_quote_name_part(name.to_s)
         end
 
         # @private these cannot specify a limit
@@ -437,11 +425,6 @@ module ActiveRecord
           sql << (options[:null] ? " NULL" : " NOT NULL") if options.has_key?(:null)
           result = execute(sql)
           result
-        end
-
-        # Implements the quoting style for SQL Server
-        def quote_name_part(part)
-          part =~ /^\[.*\]$/ ? part : "[#{part.gsub(']', ']]')}]"
         end
 
         def remove_check_constraints(table_name, column_name)
