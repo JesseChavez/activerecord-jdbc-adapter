@@ -90,7 +90,7 @@ module ActiveRecord
           end
         end
 
-        def internal_exec_query(sql, name = 'SQL', binds = [], prepare: false, async: false)
+        def internal_exec_query(sql, name = 'SQL', binds = [], prepare: false, async: false, allow_retry: false)
           sql = transform_query(sql)
 
           check_if_write_query(sql)

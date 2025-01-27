@@ -2,7 +2,9 @@ require 'db/mssql'
 
 class MSSQLConnectionTest < Test::Unit::TestCase
   def setup
-    @connection = ActiveRecord::Base.connection
+    @connection = ActiveRecord::Base.lease_connection
+
+    @connection.reconnect!
   end
 
   def teardown
