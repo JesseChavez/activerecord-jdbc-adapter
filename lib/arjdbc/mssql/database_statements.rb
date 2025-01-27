@@ -244,7 +244,7 @@ module ActiveRecord
         end
 
         def raw_jdbc_connection
-          @raw_connection
+          any_raw_connection
         end
 
         # It seems the truncate_tables is mostly used for testing
