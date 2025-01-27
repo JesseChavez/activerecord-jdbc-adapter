@@ -30,6 +30,8 @@ require 'arjdbc/mssql/errors'
 require 'arjdbc/mssql/schema_creation'
 require 'arjdbc/mssql/database_limits'
 
+require "arjdbc/mssql/adapter_hash_config"
+
 require "arjdbc/abstract/relation_query_attribute_monkey_patch"
 
 module ActiveRecord
@@ -44,6 +46,7 @@ module ActiveRecord
       # include ArJdbc::Abstract::DatabaseStatements
       # include ArJdbc::Abstract::StatementCache
       include ArJdbc::Abstract::TransactionSupport
+      include ArJdbc::MSSQLConfig
 
       include MSSQL::Quoting
       include MSSQL::SchemaStatements
@@ -81,7 +84,8 @@ module ActiveRecord
         # configure_connection happens in super
         super
 
-        conn_params = @config.compact
+        # assign arjdbc extra connection params
+        conn_params = build_connection_config(@config.compact)
 
         @raw_connection = nil
 
