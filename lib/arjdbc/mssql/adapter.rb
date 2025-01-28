@@ -344,7 +344,7 @@ module ActiveRecord
 
         schemas_and_tables.map do |schema_table|
           schema, table = schema_table
-          "#{quote_name_part(schema)}.#{quote_name_part(table)}"
+          "#{self.class.mssql_quote_name_part(schema)}.#{self.class.mssql_quote_name_part(table)}"
         end
       end
 
