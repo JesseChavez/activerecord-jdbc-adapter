@@ -216,7 +216,7 @@ module SerializeTestMethods
 
   def test_serialize_attribute_via_select_method_when_time_zone_available
     ActiveRecord::Base.time_zone_aware_attributes = true
-    Topic.serialize(:content, code: MyObject)
+    Topic.serialize(:content, type: MyObject)
 
     myobj = MyObject.new('value1', 'value2')
     topic = Topic.create(:content => myobj)
