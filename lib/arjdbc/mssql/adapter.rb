@@ -482,6 +482,8 @@ module ActiveRecord
           ConnectionNotEstablished.new(exception)
         when /(cannot insert duplicate key .* with unique index) | (violation of unique key constraint)/i
           RecordNotUnique.new(message, sql: sql, binds: binds)
+        when /Violation of PRIMARY KEY constraint .* Cannot insert duplicate key in object .* The duplicate key value is/i
+          RecordNotUnique.new(message, sql: sql, binds: binds)
         when /Lock request time out period exceeded/i
           LockTimeout.new(message, sql: sql, binds: binds)
         when /The .* statement conflicted with the FOREIGN KEY constraint/
