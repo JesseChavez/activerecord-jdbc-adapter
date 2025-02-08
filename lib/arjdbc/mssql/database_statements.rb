@@ -176,6 +176,9 @@ module ActiveRecord
             log(sql, name, binds) do
               with_raw_connection do |conn|
                 result = conditional_indentity_insert(sql) do
+                  # DEPRECATION WARNING: to_time will always preserve the timezone offset of the receiver in Rails 8.0.
+                  # To opt in to the new behavior, set `ActiveSupport.to_time_preserves_timezone = true`.
+                  # (called from block in execute_insert_pk
                   conn.execute_insert_pk(sql, binds, pk)
                 end
                 verified!
