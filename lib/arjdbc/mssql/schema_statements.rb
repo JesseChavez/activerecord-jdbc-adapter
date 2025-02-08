@@ -80,6 +80,20 @@ module ActiveRecord
           valid_raw_connection.primary_keys(table_name)
         end
 
+        def build_change_column_definition(table_name, column_name, type, **options) # :nodoc:
+          td = create_table_definition(table_name)
+          cd = td.new_column_definition(column_name, type, **options)
+          ChangeColumnDefinition.new(cd, column_name)
+        end
+
+        def build_change_column_default_definition(table_name, column_name, default_or_changes) # :nodoc:
+          column = column_for(table_name, column_name)
+          return unless column
+
+          default = extract_new_default_value(default_or_changes)
+          ChangeColumnDefaultDefinition.new(column, default)
+        end
+
         def foreign_keys(table_name)
           valid_raw_connection.foreign_keys(table_name)
         end
