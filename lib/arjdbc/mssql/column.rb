@@ -9,17 +9,26 @@ module ActiveRecord
       def initialize(name, raw_default, sql_type_metadata = nil, null = true, table_name = nil, default_function = nil, collation = nil, comment: nil)
         @table_name = table_name
 
-        default = extract_default(raw_default)
+        default_val, default_fun = extract_default(raw_default)
 
-        super(name, default, sql_type_metadata, null, default_function, collation: collation, comment: comment)
+        super(name, default_val, sql_type_metadata, null, default_fun, collation: collation, comment: comment)
       end
 
       def extract_default(value)
-        # return nil if default does not match the patterns to avoid
-        # any unexpected errors.
-        return unless value =~ /^\(N?'(.*)'\)$/m || value =~ /^\(\(?(.*?)\)?\)$/
+        return [nil, nil] unless value
 
-        unquote_string(Regexp.last_match[1])
+        case value
+        when /\A\(N?'(.*)'\)\Z/m
+          [unquote_string(Regexp.last_match[1]), nil]
+        when /\A\(\((.*)\)\)\Z/
+          [unquote_string(Regexp.last_match[1]), nil]
+        when /\A\((\w+\(\))\)\Z/
+          [nil, unquote_string(Regexp.last_match[1])]
+        else
+          # return nil if default does not match the patterns to avoid
+          # any unexpected errors.
+          [nil, nil]
+        end
       end
 
       def unquote_string(string)
