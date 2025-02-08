@@ -54,6 +54,7 @@ module ActiveRecord
       include MSSQL::ExplainSupport
       include MSSQL::DatabaseLimits
 
+      # Latin1-General, case-sensitive, accent-sensitive, kanatype-insensitive, width-sensitive
       @cs_equality_operator = 'COLLATE Latin1_General_CS_AS_WS'
 
       class << self
@@ -265,29 +266,25 @@ module ActiveRecord
 
       alias_method :current_schema=, :default_schema=
 
-      # FIXME: This needs to be fixed when we implement the collation per
-      # column basis. At the moment we only use the global database collation
-      def default_uniqueness_comparison(attribute, value) # :nodoc:
-        column = column_for_attribute(attribute)
-
-        if [:string, :text].include?(column.type) && collation && !collation.match(/_CS/) && !value.nil?
-          # NOTE: there is a deprecation warning here in the mysql adapter
-          # no sure if it's required.
-          attribute.eq(Arel::Nodes::Bin.new(value))
-        else
-          super
-        end
-      end
-
+      # FIXME: This needs to be fixed when we implement the collation per column
       def case_sensitive_comparison(attribute, value)
         column = column_for_attribute(attribute)
 
-        if [:string, :text].include?(column.type) && collation && !collation.match(/_CS/) && !value.nil?
+        case_sensitive = collation && collation.match(/_CS/)
+
+        if %i[string text].include?(column.type) && !case_sensitive && !value.nil?
           attribute.eq(Arel::Nodes::Bin.new(value))
         else
           super
         end
       end
+
+      def can_perform_case_insensitive_comparison_for?(column)
+        case_sensitive = collation && collation.match(/_CS/)
+
+        %i[string text].include?(column.type) && !case_sensitive
+      end
+      private :can_perform_case_insensitive_comparison_for?
 
       def configure_connection
         # Here goes initial settings per connection
