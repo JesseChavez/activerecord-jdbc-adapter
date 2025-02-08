@@ -38,6 +38,22 @@ module ActiveRecord
           end
         end
 
+        def visit_CreateIndexDefinition(o)
+          index = o.index
+
+          sql = []
+          sql << "IF NOT EXISTS (SELECT name FROM sysindexes WHERE name = '#{o.index.name}')" if o.if_not_exists
+          sql << "CREATE"
+          sql << "UNIQUE" if index.unique
+          sql << index.type.upcase if index.type
+          sql << "INDEX"
+          sql << "#{quote_column_name(index.name)} ON #{quote_table_name(index.table)}"
+          sql << "(#{quoted_columns(index)})"
+          sql << "WHERE #{index.where}" if index.where
+
+          sql.join(" ")
+        end
+
         def add_column_options!(sql, options)
           sql << " DEFAULT #{quote_default_expression(options[:default], options[:column])}" if options_include_default?(options)
 
