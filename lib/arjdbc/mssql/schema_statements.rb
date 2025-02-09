@@ -95,7 +95,35 @@ module ActiveRecord
         end
 
         def foreign_keys(table_name)
-          valid_raw_connection.foreign_keys(table_name)
+          # valid_raw_connection.foreign_keys(table_name)
+          fk_info = execute_procedure(:sp_fkeys, nil, nil, nil, table_name, nil)
+
+          grouped_fk = fk_info.group_by { |row| row["FK_NAME"] }.values.each { |group| group.sort_by! { |row| row["KEY_SEQ"] } }
+          grouped_fk.map do |group|
+            row = group.first
+            options = {
+              name: row["FK_NAME"],
+              on_update: extract_foreign_key_action("update", row["FK_NAME"]),
+              on_delete: extract_foreign_key_action("delete", row["FK_NAME"])
+            }
+
+            if group.one?
+              options[:column] = row["FKCOLUMN_NAME"]
+              options[:primary_key] = row["PKCOLUMN_NAME"]
+            else
+              options[:column] = group.map { |row| row["FKCOLUMN_NAME"] }
+              options[:primary_key] = group.map { |row| row["PKCOLUMN_NAME"] }
+            end
+
+            ForeignKeyDefinition.new(table_name, row["PKTABLE_NAME"], options)
+          end
+        end
+
+        def extract_foreign_key_action(action, fk_name)
+          case select_value("SELECT #{action}_referential_action_desc FROM sys.foreign_keys WHERE name = '#{fk_name}'")
+          when "CASCADE" then :cascade
+          when "SET_NULL" then :nullify
+          end
         end
 
         def charset
