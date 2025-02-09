@@ -17,6 +17,15 @@ if defined?(JRUBY_VERSION)
     ActiveRecord::ConnectionAdapters.register(
       "sqlserver", "ActiveRecord::ConnectionAdapters::MSSQLAdapter", "active_record/connection_adapters/mssql_adapter"
     )
+    ActiveRecord::ConnectionAdapters.register(
+      "sqlite3", "ActiveRecord::ConnectionAdapters::SQLite3Adapter", "arjdbc/sqlite3/adapter"
+    )
+    ActiveRecord::ConnectionAdapters.register(
+      "postgresql", "ActiveRecord::ConnectionAdapters::PostgreSQLAdapter", "arjdbc/postgresql/adapter"
+    )
+    ActiveRecord::ConnectionAdapters.register(
+      "mysql2", "ActiveRecord::ConnectionAdapters::Mysql2Adapter", "arjdbc/mysql/adapter"
+    )
   end
 else
   warn "activerecord-jdbc-adapter is for use with JRuby only"
