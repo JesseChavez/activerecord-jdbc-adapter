@@ -14,6 +14,7 @@ require 'arjdbc/abstract/connection_management'
 require 'arjdbc/abstract/database_statements'
 require 'arjdbc/abstract/statement_cache'
 require 'arjdbc/abstract/transaction_support'
+require 'arjdbc/abstract/quoting'
 
 require 'arjdbc/mssql/utils'
 require 'arjdbc/mssql/server_version'
@@ -46,6 +47,7 @@ module ActiveRecord
       # include ArJdbc::Abstract::DatabaseStatements
       # include ArJdbc::Abstract::StatementCache
       include ArJdbc::Abstract::TransactionSupport
+      include ArJdbc::Abstract::Quoting
       include ArJdbc::MSSQLConfig
 
       include MSSQL::Quoting

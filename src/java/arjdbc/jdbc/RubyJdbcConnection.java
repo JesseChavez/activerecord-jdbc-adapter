@@ -2445,7 +2445,7 @@ public class RubyJdbcConnection extends RubyObject {
             value = valueForDatabase(context, attribute);
         } else if (timeZoneClass.isInstance(attribute)) {
             type = jdbcTypeFor("timestamp");
-            value = attribute;
+            value = timeForDatabase(context, attribute);
         } else {
             type = jdbcTypeForPrimitiveAttribute(context, attribute);
             value = attribute;
@@ -3684,6 +3684,10 @@ public class RubyJdbcConnection extends RubyObject {
 
     protected IRubyObject valueForDatabase(final ThreadContext context, final IRubyObject attribute) {
         return attribute.callMethod(context, "value_for_database");
+    }
+
+    protected IRubyObject timeForDatabase(final ThreadContext context, final IRubyObject attribute) {
+        return adapter.callMethod(context, "time_for_database", attribute);
     }
 
     // FIXME: This should not be static and will be exposed via api in connection as instance method.

@@ -65,6 +65,8 @@ module ArJdbc
             binds.map do |bind|
               if bind.respond_to?(:value_for_database)
                 bind.value_for_database
+              elsif bind.is_a?(Time)
+                time_for_database(bind)
               else
                 bind
               end
