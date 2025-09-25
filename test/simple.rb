@@ -847,6 +847,16 @@ module SimpleTestMethods
     assert_equal 'bar?', entry.content
   end
 
+  def test_time_bind_param
+    with_timezone_config default: :utc, zone: 'Australia/Melbourne' do
+      time = Time.zone.local(2000, 1, 1, 16)
+      entry = Entry.create! updated_on: time + 1.hour
+      sql = 'updated_on >= ?'
+      entries = Entry.where(sql, time)
+      assert_equal 1, entries.size
+    end
+  end
+
   class ChangeEntriesTable < ActiveRecord::Migration[4.2]
     def self.up
       change_table :entries do |t|
