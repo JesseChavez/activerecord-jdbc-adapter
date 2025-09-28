@@ -6,6 +6,8 @@ require "arjdbc/abstract/core"
 require "arjdbc/abstract/database_statements"
 require 'arjdbc/abstract/statement_cache'
 require "arjdbc/abstract/transaction_support"
+require "arjdbc/abstract/quoting"
+
 require "active_record/connection_adapters/abstract_adapter"
 require "active_record/connection_adapters/statement_pool"
 require "active_record/connection_adapters/sqlite3/explain_pretty_printer"
@@ -846,6 +848,7 @@ module ActiveRecord::ConnectionAdapters
     include ArJdbc::Abstract::DatabaseStatements
     include ArJdbc::Abstract::StatementCache
     include ArJdbc::Abstract::TransactionSupport
+    include ArJdbc::Abstract::Quoting
 
 
     ##
