@@ -102,6 +102,8 @@ module ActiveRecord
           # binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
 
           # puts "internal----->sql: #{sql}, binds: #{binds}"
+          type_casted_binds = type_casted_binds(binds)
+
           if without_prepared_statement?(binds)
             log(sql, name) do
               with_raw_connection do |conn|
@@ -113,13 +115,13 @@ module ActiveRecord
               end
             end
           else
-            log(sql, name, binds) do
+            log(sql, name, type_casted_binds) do
               with_raw_connection do |conn|
                 # this is different from normal AR that always caches
                 cached_statement = fetch_cached_statement(sql) if prepare && @jdbc_statement_cache_enabled
 
                 result = conditional_indentity_insert(sql) do
-                  conn.execute_prepared_query(sql, binds, cached_statement)
+                  conn.execute_prepared_query(sql, type_casted_binds, cached_statement)
                 end
                 verified!
                 result
