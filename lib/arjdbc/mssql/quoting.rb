@@ -60,6 +60,15 @@ module ActiveRecord
           end
         end
 
+        def type_cast(value) # :nodoc:
+          case value
+          when BigDecimal
+            value
+          else
+            super
+          end
+        end
+
         QUOTED_TRUE  = '1'
         QUOTED_FALSE = '0'
 

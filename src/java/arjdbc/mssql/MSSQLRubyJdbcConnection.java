@@ -293,6 +293,8 @@ public class MSSQLRubyJdbcConnection extends RubyJdbcConnection {
 
             return;
         }
+
+        // statement.setObject(index, value.asString().toString());
         super.setStringParameter(context, connection, statement, index, value, attribute, type);
     }
 
