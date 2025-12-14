@@ -2453,8 +2453,7 @@ public class RubyJdbcConnection extends RubyObject {
 
         // All the set methods were calling this first so save a method call in the nil case
         if ( value == context.nil ) {
-            // statement.setNull(index, type);
-            statement.setObject(index, null);
+            setNullParameter(context, connection, statement, index, type);
             return;
         }
 
@@ -2516,6 +2515,13 @@ public class RubyJdbcConnection extends RubyObject {
             default:
                 setStringParameter(context, connection, statement, index, value, attribute, type);
         }
+    }
+
+    protected void setNullParameter(final ThreadContext context,
+        final Connection connection, final PreparedStatement statement,
+        final int index, final int type) throws SQLException {
+            // statement.setObject(index, null);
+            statement.setNull(index, type);
     }
 
     protected static final Map<String, Integer> JDBC_TYPE_FOR = new HashMap<>(32, 1);

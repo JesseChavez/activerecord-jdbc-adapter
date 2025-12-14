@@ -414,6 +414,14 @@ public class PostgreSQLRubyJdbcConnection extends arjdbc.jdbc.RubyJdbcConnection
     }
 
     @Override
+    protected void setNullParameter(final ThreadContext context,
+        final Connection connection, final PreparedStatement statement,
+        final int index, final int type) throws SQLException {
+            statement.setObject(index, null);
+            // statement.setNull(index, type);
+    }
+
+    @Override
     protected void setObjectParameter(final ThreadContext context,
         final Connection connection, final PreparedStatement statement,
         final int index, IRubyObject value,
