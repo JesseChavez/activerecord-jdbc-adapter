@@ -156,7 +156,7 @@ jobs:
         ruby-version: [ 'jruby-9.4.8.0' ]
         db: [ 'mssql' ]
         test_targets: [ "rails:test_mssql" ]
-        ar_version: ["7-1-stable-dev"]
+        ar_version: ["7-2-stable-dev"]
 
     services:
       mssql:
