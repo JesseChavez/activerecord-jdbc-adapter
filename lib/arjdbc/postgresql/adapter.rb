@@ -19,6 +19,8 @@ require 'arjdbc/abstract/connection_management'
 require 'arjdbc/abstract/database_statements'
 require 'arjdbc/abstract/statement_cache'
 require 'arjdbc/abstract/transaction_support'
+require 'arjdbc/abstract/quoting'
+
 require 'arjdbc/postgresql/base/array_decoder'
 require 'arjdbc/postgresql/base/array_encoder'
 require 'arjdbc/postgresql/name'
@@ -864,6 +866,7 @@ module ActiveRecord::ConnectionAdapters
     include ArJdbc::Abstract::DatabaseStatements
     include ArJdbc::Abstract::StatementCache
     include ArJdbc::Abstract::TransactionSupport
+    include ArJdbc::Abstract::Quoting
     include ArJdbc::PostgreSQLConfig
 
     # NOTE: after AR refactor quote_column_name became class and instance method

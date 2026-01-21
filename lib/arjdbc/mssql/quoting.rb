@@ -99,7 +99,7 @@ module ActiveRecord
         # The JDBC drivers does not work with 6 digits microseconds
         def quoted_date(value)
           if value.acts_like?(:time)
-            value = time_with_db_timezone(value)
+            value = time_for_database(value)
           end
 
           result = value.to_fs(:db)
@@ -152,22 +152,6 @@ module ActiveRecord
         # @private
         # @see #quote in old adapter
         BLOB_VALUE_MARKER = "''"
-
-        private
-
-        def time_with_db_timezone(value)
-          zone_conv_method = if ActiveRecord.default_timezone == :utc
-                               :getutc
-                             else
-                               :getlocal
-                             end
-
-          if value.respond_to?(zone_conv_method)
-            value = value.send(zone_conv_method)
-          else
-            value
-          end
-        end
       end
     end
   end

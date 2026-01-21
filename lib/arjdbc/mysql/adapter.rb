@@ -10,6 +10,7 @@ require 'arjdbc/abstract/connection_management'
 require 'arjdbc/abstract/database_statements'
 require 'arjdbc/abstract/statement_cache'
 require 'arjdbc/abstract/transaction_support'
+require 'arjdbc/abstract/quoting'
 
 require "arjdbc/mysql/adapter_hash_config"
 
@@ -34,6 +35,7 @@ module ActiveRecord
       # NOTE: do not include MySQL::DatabaseStatements
       include ArJdbc::Abstract::StatementCache
       include ArJdbc::Abstract::TransactionSupport
+      include ArJdbc::Abstract::Quoting
 
       include ArJdbc::MySQL
       include ArJdbc::MysqlConfig
@@ -137,7 +139,7 @@ module ActiveRecord
         return "EXPLAIN" if options.empty?
 
         explain_clause = "EXPLAIN #{options.join(" ").upcase}"
-        
+
         if analyze_without_explain? && explain_clause.include?("ANALYZE")
           explain_clause.sub("EXPLAIN ", "")
         else

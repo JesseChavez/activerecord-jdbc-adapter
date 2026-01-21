@@ -16,6 +16,7 @@ require 'arjdbc/abstract/core'
 require 'arjdbc/abstract/connection_management'
 require 'arjdbc/abstract/database_statements'
 require 'arjdbc/abstract/transaction_support'
+require 'arjdbc/abstract/quoting'
 
 module ActiveRecord
   module ConnectionAdapters
@@ -43,6 +44,7 @@ module ActiveRecord
       include ArJdbc::Abstract::ConnectionManagement
       include ArJdbc::Abstract::DatabaseStatements
       include ArJdbc::Abstract::TransactionSupport
+      include ArJdbc::Abstract::Quoting
 
       attr_reader :prepared_statements
 
