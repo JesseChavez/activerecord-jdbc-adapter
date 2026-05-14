@@ -419,14 +419,16 @@ module ArJdbc
     # Add enum value to an existing enum type.
     def add_enum_value(type_name, value, options = {})
       before, after = options.values_at(:before, :after)
-      sql = +"ALTER TYPE #{quote_table_name(type_name)} ADD VALUE '#{value}'"
+      sql = +"ALTER TYPE #{quote_table_name(type_name)} ADD VALUE"
+      sql << " IF NOT EXISTS" if options[:if_not_exists]
+      sql << " #{quote(value)}"
 
       if before && after
         raise ArgumentError, "Cannot have both :before and :after at the same time"
       elsif before
-        sql << " BEFORE '#{before}'"
+        sql << " BEFORE #{quote(before)}"
       elsif after
-        sql << " AFTER '#{after}'"
+        sql << " AFTER #{quote(after)}"
       end
 
       execute(sql).tap { reload_type_map }
@@ -441,7 +443,7 @@ module ArJdbc
       from = options.fetch(:from) { raise ArgumentError, ":from is required" }
       to = options.fetch(:to) { raise ArgumentError, ":to is required" }
 
-      execute("ALTER TYPE #{quote_table_name(type_name)} RENAME VALUE '#{from}' TO '#{to}'").tap {
+      execute("ALTER TYPE #{quote_table_name(type_name)} RENAME VALUE #{quote(from)} TO #{quote(to)}").tap {
         reload_type_map
       }
     end
