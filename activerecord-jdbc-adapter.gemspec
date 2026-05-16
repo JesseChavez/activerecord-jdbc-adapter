@@ -10,7 +10,7 @@ Gem::Specification.new do |gem|
   gem.homepage = 'https://github.com/jruby/activerecord-jdbc-adapter'
   gem.license = 'BSD-2-Clause'
   gem.summary = 'JDBC adapter for ActiveRecord, for use within JRuby on Rails.'
-  gem.description = "" <<
+  gem.description = +"" <<
     "AR-JDBC is a database adapter for Rails' ActiveRecord component " <<
     "designed to be used with JRuby built upon Java's JDBC API for " <<
     "database access. Provides (ActiveRecord) built-in adapters: MySQL,  " <<
@@ -41,7 +41,7 @@ Gem::Specification.new do |gem|
   gem.executables = gem.files.grep(%r{^bin/}).map { |f| File.basename(f) }
   gem.test_files = gem.files.grep(%r{^test/})
 
-  gem.add_dependency "activerecord", "~> 7.2.2"
+  gem.add_dependency "activerecord", "~> 8.0.0"
 
   #gem.add_development_dependency 'test-unit', '2.5.4'
   #gem.add_development_dependency 'test-unit-context', '>= 0.3.0'

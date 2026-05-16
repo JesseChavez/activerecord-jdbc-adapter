@@ -5,6 +5,21 @@
 #
 # Environment variables used by this Rakefile:
 #
+# DBS
+#   Limits the command performed to only work for one of the database
+#   types listed in this env var. You can set to a combination of mysql, 
+#   postgres, or sqlite, separated by commas. For example:
+#
+#    mysql,postgres,sqlite
+#
+#    You may use pg or postgres as aliases for postgresql
+#    You may use sqlite3 as an alias for sqlite
+#    You may use all to mean all three
+#
+#    NOTE: if you ever want to add a new type of database to be released,
+#          just fix up this documentation, the error string in invalid_dbs,
+#          and add it to the ALL_DBS array. Everything else should just work!
+#
 # INCLUDE_JAR_IN_GEM [default task - false, other taks - true]:
 #   Note: This is something you should not normally have to set.
 #   For local development we always will end up including the jar file
@@ -85,6 +100,12 @@ end
 
 desc "Releasing AR-JDBC gems (use NOOP=true to disable gem pushing)"
 task 'release:do' do
+  unless ENV["DBS"]
+    puts "you must explicitly provide a DBS env var when calling release:do. An empty one will not default to 'all' " \
+           "for this command\n\n"
+    invalid_dbs!
+  end
+
   Rake::Task['build'].invoke
   # Rake::Task['build:adapters'].invoke
 
@@ -107,8 +128,41 @@ task 'release:push' do
   sh "for gem in `ls pkg/*-#{current_version.call}-java.gem`; do gem push $gem; done"
 end
 
-ADAPTERS = %w[mysql postgresql sqlite3].map { |a| "activerecord-jdbc#{a}-adapter" }
-DRIVERS  = %w[mysql postgres sqlite3].map { |a| "jdbc-#{a}" }
+ALL_DBS = ["mysql", "postgresql", "sqlite3"]  #NOTE: if we add a new database type to be released, just add it here!
+DB_ALIASES = ALL_DBS.map {|db| [db, db]}.to_h.merge({
+  "pg" => "postgresql",
+  "postgres" => "postgresql",
+  "sqlite" => "sqlite3"
+})
+
+def invalid_dbs!
+  raise ArgumentError, "Invalid DBS env var\nThe DBS env var must be set to a combination of mysql, postgres, or " \
+                       "sqlite, separated by commas. For example:\n\nmysql,postgres,sqlite\n\nYou may use pg or " \
+                       "postgres as aliases for postgresql\nYou may use sqlite3 as an alias for sqlite\n" \
+                       "You may use all as a shortcut to listing them all out"
+end
+
+def make_db_list
+  env_dbs = ENV["DBS"]
+  return ALL_DBS if !env_dbs || env_dbs == "all"
+  requested = env_dbs.split(",").map(&:strip).reject(&:empty?).map(&:downcase)
+  invalid_dbs! unless requested.size > 0 && requested == requested.uniq
+
+  canonical = requested.map do |name|
+    DB_ALIASES.fetch(name) { invalid_dbs! }
+  end
+
+  invalid_dbs! unless canonical == canonical.uniq
+
+  canonical
+end
+
+db_list = make_db_list
+ADAPTERS = db_list.map { |db| "activerecord-jdbc#{db}-adapter" }
+
+db_list.map! {|db| db == 'postgresql' ? 'postgres' : db  }  #naming convention for DRIVERS
+DRIVERS  = db_list.map { |a| "jdbc-#{a}" }
+
 TARGETS = ( ADAPTERS + DRIVERS )
 
 ADAPTERS.each do |target|
@@ -185,7 +239,7 @@ if defined? JRUBY_VERSION
   #directory classes = 'pkg/classes'; CLEAN << classes
 
   file jar_file => FileList[ 'src/java/**/*.java' ] do
-    source = target = '1.8'; debug = true
+    source = target = '21'; debug = true
 
     get_driver_jars_local = lambda do |*args|
       driver_deps = args.empty? ? [ :Postgres, :MySQL ] : args
@@ -262,18 +316,12 @@ if defined? JRUBY_VERSION
     end
 
     classpath = []
-    [ 'java.class.path', 'sun.boot.class.path' ].map { |key| ENV_JAVA[key] }.each do |v|
-      classpath += v.split(File::PATH_SEPARATOR).find_all { |jar| jar =~ /jruby/i } if v
+    require 'rbconfig'
+    libdir = RbConfig::CONFIG['libdir']
+    if libdir.start_with? 'classpath:'
+      error "Cannot build activerecord-jdbc with jruby-complete"
     end
-    # Using Java 9+.  Let's try and infer jruby.jar location from rbconfig
-    if classpath.empty?; require 'rbconfig'
-      libdir = RbConfig::CONFIG['libdir']
-      if libdir.start_with? 'classpath:'
-        error "Cannot build activerecord-jdbc with jruby-complete"
-      end
-      classpath << File.join(libdir, 'jruby.jar')
-    end
-    
+    classpath << File.join(libdir, 'jruby.jar')
     classpath += driver_jars
     classpath = classpath.compact.join(File::PATH_SEPARATOR)
 

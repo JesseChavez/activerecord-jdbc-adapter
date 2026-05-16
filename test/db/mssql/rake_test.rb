@@ -74,8 +74,8 @@ class MSSQLRakeDbCreateTest < Test::Unit::TestCase
       Rake::Task['db:structure:dump'].invoke
 
       assert File.exist?(structure_sql)
-      # CREATE TABLE [dbo].[rake_users]( ... )
-      assert_match(/CREATE TABLE .*?\[rake_users\]/i, File.read(structure_sql))
+      # CREATE TABLE [dbo].[users]( ... )
+      assert_match /CREATE TABLE .*?\[users\]/i, File.read(structure_sql)
 
       # db:structure:load
       drop_rake_test_database(:silence)
@@ -87,8 +87,7 @@ class MSSQLRakeDbCreateTest < Test::Unit::TestCase
       ActiveRecord::Base.connection.disconnect!
     ensure
       File.delete(structure_sql) if File.exist?(structure_sql)
-      Dir.rmdir 'db/schema'
-      ActiveRecord::Base.schema_format = initial_format
+      Dir.rmdir 'db'
     end
   end
 
