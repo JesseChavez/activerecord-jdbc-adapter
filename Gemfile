@@ -85,6 +85,8 @@ group :test do
   
   # JDBC SQLite version override
   platform :jruby do
+    gem 'jdbc-mssql', '~> 12.6', require: nil
+
     if sqlite_version = ENV['JDBC_SQLITE_VERSION']
       gem 'jdbc-sqlite3', sqlite_version, require: nil
     end
