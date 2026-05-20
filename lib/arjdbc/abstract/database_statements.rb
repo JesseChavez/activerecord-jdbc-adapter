@@ -12,6 +12,7 @@ module ArJdbc
       def exec_insert(sql, name = nil, binds = NO_BINDS, pk = nil, sequence_name = nil, returning: nil)
         sql = preprocess_query(sql)
 
+        binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
         type_casted_binds = type_casted_binds(binds)
 
         with_raw_connection do |conn|
@@ -32,18 +33,24 @@ module ArJdbc
       def internal_exec_query(sql, name = nil, binds = NO_BINDS, prepare: false, async: false, allow_retry: false, materialize_transactions: true)
         sql = preprocess_query(sql)
 
+        raw_exec_query(sql, name, binds, prepare: prepare, async: async, allow_retry: allow_retry, materialize_transactions: materialize_transactions)
+      end
+
+      def raw_exec_query(sql, name = nil, binds = NO_BINDS, prepare: false, async: false, allow_retry: false, materialize_transactions: true)
+        binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
+
         # puts "[1]internal----->sql: #{sql}, binds: #{binds}"
         type_casted_binds = type_casted_binds(binds)
         # puts "[2]internal----->sql: #{type_casted_binds.size}, binds: #{type_casted_binds}"
 
-        with_raw_connection do |conn|
-          if without_prepared_statement?(binds)
-            log(sql, name, async: async) { conn.execute_query(sql) }
-          else
-            log(sql, name, binds, type_casted_binds, async: async) do
+        log(sql, name, binds, type_casted_binds, async: async) do
+          with_raw_connection(allow_retry: allow_retry, materialize_transactions: materialize_transactions) do |conn|
+            if without_prepared_statement?(binds)
+              conn.execute_query(sql)
+            else
               # this is different from normal AR that always caches
               cached_statement = fetch_cached_statement(sql) if prepare && @jdbc_statement_cache_enabled
-              conn.execute_prepared_query(sql, binds, cached_statement)
+              conn.execute_prepared_query(sql, type_casted_binds, cached_statement)
             end
           end
         end
@@ -68,6 +75,7 @@ module ArJdbc
           end
         end
       end
+
       alias :exec_delete :exec_update
 
       # overridden to support legacy binds
