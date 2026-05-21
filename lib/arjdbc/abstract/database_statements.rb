@@ -13,12 +13,12 @@ module ArJdbc
         sql = preprocess_query(sql)
 
         binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
-        type_casted_binds = type_casted_binds(binds)
 
         with_raw_connection do |conn|
           if without_prepared_statement?(binds)
             log(sql, name) { conn.execute_insert_pk(sql, pk) }
           else
+            type_casted_binds = type_casted_binds(binds)
             log(sql, name, binds, type_casted_binds) do
               # TODO: the ideas is to pass type casted binds but dozens of tests fail
               # conn.execute_insert_pk(sql, type_casted_binds, pk)
@@ -61,17 +61,12 @@ module ArJdbc
 
         binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
 
-        type_casted_binds = type_casted_binds(binds)
-
         with_raw_connection do |conn|
           if without_prepared_statement?(binds)
             log(sql, name) { conn.execute_update(sql) }
           else
-            log(sql, name, binds, type_casted_binds) do
-              # TODO: the ideas is to pass type casted binds but some tests fail
-              # conn.execute_prepared_update(sql, type_casted_binds)
-              conn.execute_prepared_update(sql, binds)
-            end
+            type_casted_binds = type_casted_binds(binds)
+            log(sql, name, binds, type_casted_binds) { conn.execute_prepared_update(sql, type_casted_binds) }
           end
         end
       end
