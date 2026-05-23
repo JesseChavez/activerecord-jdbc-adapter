@@ -82,6 +82,12 @@ module ArJdbc
           ActiveRecord::Result.new(fields, raw_result.values)
         end
       end
+
+      private
+
+      def returning_column_values(result)
+        result.rows.first
+      end
     end
   end
 end
