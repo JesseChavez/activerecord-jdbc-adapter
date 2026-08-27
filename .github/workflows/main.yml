@@ -43,7 +43,7 @@ jobs:
         ports:
           - 1433:1433
         options: >-
-          --health-cmd="/opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P \"Password12!\" -l 30 -Q \"SELECT 1\""
+          --health-cmd="/opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P \"Password12!\" -l 30 -C -Q \"SELECT 1\""
           --health-start-period 10s
           --health-interval 10s
           --health-timeout 5s
@@ -63,7 +63,7 @@ jobs:
           ruby-version: ${{ matrix.ruby-version }}
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
       - name: Setup database
-        run: /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P "Password12!" -Q "CREATE DATABASE arjdbc_test;"
+        run: /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P "Password12!" -C -Q "CREATE DATABASE arjdbc_test;"
       - name: Build
         run: |
           rake jar
@@ -167,7 +167,7 @@ jobs:
         ports:
           - 1433:1433
         options: >-
-          --health-cmd="/opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P \"Password12!\" -l 30 -Q \"SELECT 1\""
+          --health-cmd="/opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P \"Password12!\" -l 30 -C -Q \"SELECT 1\""
           --health-start-period 10s
           --health-interval 10s
           --health-timeout 5s
@@ -190,8 +190,8 @@ jobs:
           bundler-cache: true # runs 'bundle install' and caches installed gems automatically
       - name: Setup database
         run: |
-          /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P "Password12!" -Q "CREATE DATABASE jdbc_arunit;"
-          /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P "Password12!" -Q "CREATE DATABASE jdbc_arunit2;"
+          /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P "Password12!" -C -Q "CREATE DATABASE jdbc_arunit;"
+          /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P "Password12!" -C -Q "CREATE DATABASE jdbc_arunit2;"
       - name: Build
         run: |
           rake jar # compiles ext generates: lib/arjdbc/jdbc/adapter_java.jar
