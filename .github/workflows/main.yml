@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby-version: ['jruby-9.4.8.0']
+        ruby-version: ['jruby-10.0.6.0']
         db: ['mssql']
         test_targets: ['test_mssql']
 
@@ -78,7 +78,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby-version: ['jruby-9.4.8.0']
+        ruby-version: ['jruby-10.0.6.0']
         db: ['sqlite3']
         test_targets: ['test_sqlite3']
 
@@ -107,7 +107,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby-version: ['jruby-9.4.8.0']
+        ruby-version: ['jruby-10.0.6.0']
         db: ['postgresql']
         test_targets: ["db:postgresql test_postgresql"]
         prepared_statements: ['false', 'true']
@@ -153,7 +153,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby-version: [ 'jruby-9.4.8.0' ]
+        ruby-version: [ 'jruby-10.0.6.0' ]
         db: [ 'mssql' ]
         test_targets: [ "rails:test_mssql" ]
         ar_version: ["7-2-stable-dev"]
@@ -206,7 +206,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby-version: ['jruby-9.4.8.0']
+        ruby-version: ['jruby-10.0.6.0']
         db: ['sqlite3']
         test_targets: ["rails:test_sqlite3"]
         ar_version: ["7-1-stable"]
@@ -238,7 +238,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby-version: [ 'jruby-9.4.8.0' ]
+        ruby-version: [ 'jruby-10.0.6.0' ]
         db: [ 'postgresql' ]
         test_targets: [ "rails:test_postgresql" ]
         ar_version: ["7-1-stable"]
