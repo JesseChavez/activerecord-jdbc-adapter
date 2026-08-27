@@ -36,7 +36,7 @@ jobs:
     # https://learn.microsoft.com/en-au/answers/questions/1853144/error-failed-to-initialize-container-mcr-microsoft
     services:
       mssql:
-        image: mcr.microsoft.com/mssql/server:2022-CU13-ubuntu-22.04
+        image: mcr.microsoft.com/mssql/server:2022-CU26-ubuntu-22.04
         env:
           ACCEPT_EULA: Y
           MSSQL_SA_PASSWORD: Password12!
@@ -160,7 +160,7 @@ jobs:
 
     services:
       mssql:
-        image: mcr.microsoft.com/mssql/server:2022-CU13-ubuntu-22.04
+        image: mcr.microsoft.com/mssql/server:2022-CU26-ubuntu-22.04
         env:
           ACCEPT_EULA: Y
           MSSQL_SA_PASSWORD: Password12!
