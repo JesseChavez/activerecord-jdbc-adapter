@@ -195,15 +195,15 @@ module ActiveRecord
 
         private
 
-        def raw_execute(sql, name, async: false, allow_retry: false, materialize_transactions: true)
-          # puts "raw_execute----->sql: #{sql}"
-          log(sql, name, async: async) do
-            with_raw_connection(allow_retry: allow_retry, materialize_transactions: materialize_transactions) do |conn|
-              result = conditional_indentity_insert(sql) { conn.execute(sql) }
-              verified!
-              result
-            end
-          end
+        def perform_query(raw_connection, sql, binds, type_casted_binds, prepare:, notification_payload:, batch:)
+          result = conditional_indentity_insert(sql) { raw_connection.execute(sql) }
+
+          count = 0
+          count = result.count if result.respond_to?(:count)
+
+          verified!
+          notification_payload[:row_count] = count
+          result
         end
 
         def sql_for_insert(sql, pk, binds, returning) # :nodoc:
