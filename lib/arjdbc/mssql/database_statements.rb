@@ -101,7 +101,7 @@ module ActiveRecord
           type_casted_binds = type_casted_binds(binds)
           # puts "[2]internal----->sql: #{type_casted_binds.size}, binds: #{type_casted_binds}"
 
-          if without_prepared_statement?(binds)
+          if binds.nil? || binds.empty?
             log(sql, name) do
               with_raw_connection do |conn|
                 result = conditional_indentity_insert(sql) do
@@ -131,7 +131,7 @@ module ActiveRecord
           sql = preprocess_query(sql)
 
           # puts "exec_update----->sql: #{sql}, binds: #{binds}"
-          if without_prepared_statement?(binds)
+          if binds.nil? || binds.empty?
             log(sql, name) do
               with_raw_connection do |conn|
                 result = conn.execute_update(sql)
@@ -155,7 +155,7 @@ module ActiveRecord
           sql = preprocess_query(sql)
 
           # puts "exec_insert----->sql: #{sql}, binds: #{binds}"
-          if without_prepared_statement?(binds)
+          if binds.nil? || binds.empty?
             log(sql, name) do
               with_raw_connection do |conn|
                 result = conditional_indentity_insert(sql) do
