@@ -93,11 +93,7 @@ module ActiveRecord
         end
 
         def internal_exec_query(sql, name = 'SQL', binds = [], prepare: false, async: false, allow_retry: false)
-          sql = transform_query(sql)
-
-          check_if_write_query(sql)
-
-          mark_transaction_written_if_write(sql)
+          sql = preprocess_query(sql)
 
           # binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
 
@@ -132,11 +128,7 @@ module ActiveRecord
         end
 
         def exec_update(sql, name = nil, binds = [])
-          sql = transform_query(sql)
-
-          check_if_write_query(sql)
-
-          mark_transaction_written_if_write(sql)
+          sql = preprocess_query(sql)
 
           # puts "exec_update----->sql: #{sql}, binds: #{binds}"
           if without_prepared_statement?(binds)
@@ -160,11 +152,7 @@ module ActiveRecord
         alias :exec_delete :exec_update
 
         def exec_insert(sql, name = nil, binds = [], pk = nil, sequence_name = nil, returning: nil)
-          sql = transform_query(sql)
-
-          check_if_write_query(sql)
-
-          mark_transaction_written_if_write(sql)
+          sql = preprocess_query(sql)
 
           # puts "exec_insert----->sql: #{sql}, binds: #{binds}"
           if without_prepared_statement?(binds)
