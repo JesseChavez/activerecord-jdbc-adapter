@@ -36,7 +36,8 @@ class MSSQLDateTimeTypesTest < Test::Unit::TestCase
     default_timezone = ActiveRecord.default_timezone
     ActiveRecord.default_timezone = :local
     time_zone = Time.zone
-    Time.zone = 'CET'
+    # Time.zone = 'CET'
+    Time.zone = "Europe/Berlin"
 
     time = Time.local 2013, 8, 14, 11, 45, 58
     model = DateAndTime.create! :datetime => time
