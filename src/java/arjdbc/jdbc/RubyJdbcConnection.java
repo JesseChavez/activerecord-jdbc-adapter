@@ -799,7 +799,7 @@ public class RubyJdbcConnection extends RubyObject {
                 boolean hasResultSet = doExecute(statement, query);
                 int updateCount = statement.getUpdateCount();
 
-                IRubyObject result = context.nil; // If no results, return nil
+                IRubyObject result = null;
                 ResultSet resultSet;
 
                 while (hasResultSet || updateCount != -1) {
@@ -822,7 +822,7 @@ public class RubyJdbcConnection extends RubyObject {
                     updateCount = statement.getUpdateCount();
                 }
 
-                return result;
+                return result == null ? mapEmptyExecuteResult(context, updateCount) : result; // If no results, return empty result
 
             } catch (final SQLException e) {
                 debugErrorSQL(context, query);

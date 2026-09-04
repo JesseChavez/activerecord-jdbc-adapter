@@ -21,6 +21,7 @@ require 'arjdbc/abstract/statement_cache'
 require 'arjdbc/abstract/transaction_support'
 require 'arjdbc/postgresql/base/array_decoder'
 require 'arjdbc/postgresql/base/array_encoder'
+require 'arjdbc/postgresql/base/connection_status'
 require 'arjdbc/postgresql/name'
 require 'arjdbc/postgresql/database_statements'
 require 'arjdbc/postgresql/schema_statements'
@@ -751,6 +752,10 @@ module ArJdbc
 
       # TODO: Can we base these on an error code of some kind?
       case exception.message
+      when /connection has been closed/i
+        ::ActiveRecord::ConnectionNotEstablished.new(exception, connection_pool: @pool)
+      when /terminating connection|the database system is (shutting down|starting up|in recovery)/i
+        ::ActiveRecord::ConnectionFailed.new(exception, connection_pool: @pool)
       when /could not create unique index/
         ::ActiveRecord::RecordNotUnique.new(message, sql: sql, binds: binds, connection_pool: @pool)
       when /duplicate key value violates unique constraint/
