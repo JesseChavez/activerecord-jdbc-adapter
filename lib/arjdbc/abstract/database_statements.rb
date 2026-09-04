@@ -41,15 +41,17 @@ module ArJdbc
         type_casted_binds = type_casted_binds(binds)
         # puts "[2]internal----->sql: #{type_casted_binds.size}, binds: #{type_casted_binds}"
 
-        log(sql, name, binds, type_casted_binds, async: async) do
+        log(sql, name, binds, type_casted_binds, async: async) do |notification_payload|
           with_raw_connection(allow_retry: allow_retry, materialize_transactions: materialize_transactions) do |conn|
-            if without_prepared_statement?(binds)
-                conn.execute_query(sql)
+            result = if without_prepared_statement?(binds)
+              conn.execute_query(sql)
             else
               # this is different from normal AR that always caches
               cached_statement = fetch_cached_statement(sql) if prepare && @jdbc_statement_cache_enabled
               conn.execute_prepared_query(sql, type_casted_binds, cached_statement)
             end
+            notification_payload[:row_count] = result.length
+            result
           end
         end
       end
@@ -89,10 +91,11 @@ module ArJdbc
       end
 
       def raw_execute(sql, name, binds = [], prepare: false, async: false, allow_retry: false, materialize_transactions: true, batch: false)
-        log(sql, name, async: async) do
+        log(sql, name, async: async) do |notification_payload|
           with_raw_connection(allow_retry: allow_retry, materialize_transactions: materialize_transactions) do |conn|
             result = conn.execute(sql)
             verified!
+            notification_payload[:row_count] = result.length
             result
           end
         end
