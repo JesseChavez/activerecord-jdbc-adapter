@@ -48,6 +48,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
+          --name ci_sqlserver
 
     env:
       DB: ${{ matrix.db }}
@@ -66,7 +67,7 @@ jobs:
         env:
           MSSQL_SA_PASSWORD: Password12!
         run: |
-          /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P $MSSQL_SA_PASSWORD -C -Q "CREATE DATABASE arjdbc_test;"
+          docker exec ci_sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P $MSSQL_SA_PASSWORD -C -Q "CREATE DATABASE arjdbc_test;"
       - name: Build
         run: |
           rake jar
@@ -175,6 +176,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
+          --name ci_sqlserver
 
     env:
       DB: ${{ matrix.db }}
@@ -195,8 +197,8 @@ jobs:
         env:
           MSSQL_SA_PASSWORD: Password12!
         run: |
-          /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P $MSSQL_SA_PASSWORD -C -Q "CREATE DATABASE jdbc_arunit;"
-          /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P $MSSQL_SA_PASSWORD -C -Q "CREATE DATABASE jdbc_arunit2;"
+          docker exec ci_sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P $MSSQL_SA_PASSWORD -C -Q "CREATE DATABASE jdbc_arunit;"
+          docker exec ci_sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P $MSSQL_SA_PASSWORD -C -Q "CREATE DATABASE jdbc_arunit2;"
       - name: Build
         run: |
           rake jar # compiles ext generates: lib/arjdbc/jdbc/adapter_java.jar
