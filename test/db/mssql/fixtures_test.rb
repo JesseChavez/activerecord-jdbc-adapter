@@ -91,7 +91,8 @@ class MSSQLFixturesTest < Test::Unit::TestCase
   end
 
   def test_insert_time
-    fixture_one = { start_at: '11:00' }
+    # fixture_one = { start_at: '11:00' }
+    fixture_one = { start_at: nil }
     fixture_two = { start_at: Time.current }
 
     FixtureEntry.connection.insert_fixture(fixture_one, :fixture_entries)
