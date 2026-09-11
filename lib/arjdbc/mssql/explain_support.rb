@@ -50,7 +50,12 @@ module ActiveRecord
                 end
 
           binds.each do |bind|
-            value = quote(bind.value_for_database)
+            value = if bind.is_a?(::ActiveModel::Attribute)
+                      quote(bind.value_for_database)
+                    else
+                      quote(bind)
+                    end
+
             sql = sql.sub('?', value)
           end
 

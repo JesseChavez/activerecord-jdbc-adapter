@@ -18,7 +18,7 @@ class MSSQLExplainTest < Test::Unit::TestCase
 
   def test_relation_explain
     create_explain_data
-    explanation = Entry.where(content: 'content').explain
+    explanation = Entry.where(content: 'content').explain.inspect
 
     assert_match(/^EXPLAIN for:/, explanation)
   end
