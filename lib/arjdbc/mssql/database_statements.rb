@@ -189,6 +189,14 @@ module ActiveRecord
 
         private
 
+        def cast_result(raw_result)
+          return ActiveRecord::Result.empty if raw_result.nil?
+
+          # nothing to cast here. the java part returns an AR Result
+          raw_result
+        end
+
+
         def perform_query(raw_connection, sql, binds, type_casted_binds, prepare:, notification_payload:, batch:)
           result = conditional_indentity_insert(sql) { raw_connection.execute(sql) }
 
