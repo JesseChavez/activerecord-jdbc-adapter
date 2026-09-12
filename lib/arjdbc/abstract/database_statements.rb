@@ -109,29 +109,6 @@ module ArJdbc
         mark_transaction_written_if_write(sql) if respond_to?(:mark_transaction_written_if_write, true)
         sql
       end
-
-      def perform_query(raw_connection, sql, binds, type_casted_binds, prepare:, notification_payload:, batch:)
-        result = raw_connection.execute(sql)
-
-        count = 0
-        count = result.count if result.respond_to?(:count)
-
-        verified!
-        notification_payload[:row_count] = count
-        result
-      end
-
-      def cast_result(raw_result)
-        return ActiveRecord::Result.empty if raw_result.nil?
-
-        fields = raw_result.fields
-
-        if fields.empty?
-          ActiveRecord::Result.empty
-        else
-          ActiveRecord::Result.new(fields, raw_result.values)
-        end
-      end
     end
   end
 end

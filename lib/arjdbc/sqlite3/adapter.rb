@@ -22,6 +22,8 @@ require "arjdbc/sqlite3/pragmas"
 
 require "arjdbc/abstract/relation_query_attribute_monkey_patch"
 
+require "arjdbc/sqlite3/database_statements"
+
 module SQLite3
   module Constants
     module Open
@@ -887,6 +889,7 @@ module ActiveRecord::ConnectionAdapters
     include ArJdbc::Abstract::StatementCache
     # Don't include TransactionSupport - use Rails' SQLite3::DatabaseStatements instead
 
+    include ::ArJdbc::SQLite3::DatabaseStatements
 
     ##
     # :singleton-method:
