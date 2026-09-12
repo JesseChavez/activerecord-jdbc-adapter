@@ -18,11 +18,15 @@ module ArJdbc
 
         binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
 
+        type_casted_binds = type_casted_binds(binds)
+
         with_raw_connection do |conn|
           if without_prepared_statement?(binds)
             log(sql, name) { conn.execute_insert_pk(sql, pk) }
           else
-            log(sql, name, binds) do
+            log(sql, name, binds, type_casted_binds) do
+              # TODO: the ideas is to pass type casted binds but dozens of tests fails
+              # conn.execute_insert_pk(sql, type_casted_binds, pk)
               conn.execute_insert_pk(sql, binds, pk)
             end
           end
@@ -66,11 +70,15 @@ module ArJdbc
 
         binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
 
+        type_casted_binds = type_casted_binds(binds)
+
         with_raw_connection do |conn|
           if without_prepared_statement?(binds)
             log(sql, name) { conn.execute_update(sql) }
           else
-            log(sql, name, binds) { conn.execute_prepared_update(sql, binds) }
+            log(sql, name, binds, type_casted_binds) do
+              conn.execute_prepared_update(sql, type_casted_binds)
+            end
           end
         end
       end
@@ -101,7 +109,9 @@ module ArJdbc
       end
 
       def raw_execute(sql, name, binds = [], prepare: false, async: false, allow_retry: false, materialize_transactions: true, batch: false)
-        log(sql, name, async: async) do
+        type_casted_binds = type_casted_binds(binds)
+
+        log(sql, name, binds, type_casted_binds, async: async) do
           with_raw_connection(allow_retry: allow_retry, materialize_transactions: materialize_transactions) do |conn|
             result = conn.execute(sql)
             verified!
