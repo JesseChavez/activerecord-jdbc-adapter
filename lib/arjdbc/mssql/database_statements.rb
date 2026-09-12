@@ -130,6 +130,8 @@ module ActiveRecord
         def exec_update(sql, name = nil, binds = [])
           sql = preprocess_query(sql)
 
+          type_casted_binds = type_casted_binds(binds)
+
           # puts "exec_update----->sql: #{sql}, binds: #{binds}"
           if binds.nil? || binds.empty?
             log(sql, name) do
@@ -140,9 +142,9 @@ module ActiveRecord
               end
             end
           else
-            log(sql, name, binds) do
+            log(sql, name, binds, type_casted_binds) do
               with_raw_connection do |conn|
-                result = conn.execute_prepared_update(sql, binds)
+                result = conn.execute_prepared_update(sql, type_casted_binds)
                 verified!
                 result
               end
@@ -153,6 +155,8 @@ module ActiveRecord
 
         def exec_insert(sql, name = nil, binds = [], pk = nil, sequence_name = nil, returning: nil)
           sql = preprocess_query(sql)
+
+          type_casted_binds = type_casted_binds(binds)
 
           # puts "exec_insert----->sql: #{sql}, binds: #{binds}"
           if binds.nil? || binds.empty?
@@ -166,12 +170,14 @@ module ActiveRecord
               end
             end
           else
-            log(sql, name, binds) do
+            log(sql, name, binds, type_casted_binds) do
               with_raw_connection do |conn|
                 result = conditional_indentity_insert(sql) do
                   # DEPRECATION WARNING: to_time will always preserve the timezone offset of the receiver in Rails 8.0.
                   # To opt in to the new behavior, set `ActiveSupport.to_time_preserves_timezone = true`.
                   # (called from block in execute_insert_pk
+                  # TODO: the ideas is to pass type casted binds but causes strange test failures
+                  # conn.execute_insert_pk(sql, type_casted_binds, pk)
                   conn.execute_insert_pk(sql, binds, pk)
                 end
                 verified!
