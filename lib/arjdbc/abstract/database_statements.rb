@@ -108,18 +108,28 @@ module ArJdbc
         sql
       end
 
-      def raw_execute(sql, name, binds = [], prepare: false, async: false, allow_retry: false, materialize_transactions: true, batch: false)
-        type_casted_binds = type_casted_binds(binds)
+      def perform_query(raw_connection, sql, binds, type_casted_binds, prepare:, notification_payload:, batch:)
+        result = raw_connection.execute(sql)
 
-        log(sql, name, binds, type_casted_binds, async: async) do
-          with_raw_connection(allow_retry: allow_retry, materialize_transactions: materialize_transactions) do |conn|
-            result = conn.execute(sql)
-            verified!
-            result
-          end
-        end
+        count = 0
+        count = result.count if result.respond_to?(:count)
+
+        verified!
+        notification_payload[:row_count] = count
+        result
       end
 
+      def cast_result(raw_result)
+        return ActiveRecord::Result.empty if raw_result.nil?
+
+        fields = raw_result.fields
+
+        if fields.empty?
+          ActiveRecord::Result.empty
+        else
+          ActiveRecord::Result.new(fields, raw_result.values)
+        end
+      end
     end
   end
 end
