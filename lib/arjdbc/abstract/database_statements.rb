@@ -25,7 +25,7 @@ module ArJdbc
             log(sql, name) { conn.execute_insert_pk(sql, pk) }
           else
             log(sql, name, binds, type_casted_binds) do
-              # TODO: the ideas is to pass type casted binds but dozens of tests fails
+              # TODO: the ideas is to pass type casted binds but dozens of tests fail
               # conn.execute_insert_pk(sql, type_casted_binds, pk)
               conn.execute_insert_pk(sql, binds, pk)
             end
@@ -77,7 +77,9 @@ module ArJdbc
             log(sql, name) { conn.execute_update(sql) }
           else
             log(sql, name, binds, type_casted_binds) do
-              conn.execute_prepared_update(sql, type_casted_binds)
+              # TODO: the ideas is to pass type casted binds but some tests fail
+              # conn.execute_prepared_update(sql, type_casted_binds)
+              conn.execute_prepared_update(sql, binds)
             end
           end
         end
