@@ -18,6 +18,26 @@ module ArJdbc
 
       private
 
+      def internal_exec_query(sql, name = nil, binds = [], prepare: false, async: false, allow_retry: false, materialize_transactions: true)
+          sql = preprocess_query(sql)
+
+        # puts "[1]internal----->sql: #{sql}, binds: #{binds}"
+        type_casted_binds = type_casted_binds(binds)
+        # puts "[2]internal----->sql: #{type_casted_binds.size}, binds: #{type_casted_binds}"
+
+        with_raw_connection do |conn|
+          if without_prepared_statement?(binds)
+            log(sql, name, async: async) { conn.execute_query(sql) }
+          else
+            log(sql, name, type_casted_binds, async: async) do
+              # this is different from normal AR that always caches
+              cached_statement = fetch_cached_statement(sql) if prepare && @jdbc_statement_cache_enabled
+              conn.execute_prepared_query(sql, type_casted_binds, cached_statement)
+            end
+          end
+        end
+      end
+
       def perform_query(raw_connection, sql, binds, type_casted_binds, prepare:, notification_payload:, batch:)
         result = raw_connection.execute(sql)
 

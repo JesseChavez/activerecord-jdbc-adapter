@@ -55,7 +55,7 @@ module ArJdbc
             log(sql, name, type_casted_binds, async: async) do
               # this is different from normal AR that always caches
               cached_statement = fetch_cached_statement(sql) if prepare && @jdbc_statement_cache_enabled
-              conn.execute_prepared_query(sql, type_casted_binds, cached_statement)
+              conn.execute_prepared_query(sql, binds, cached_statement)
             end
           end
         end
