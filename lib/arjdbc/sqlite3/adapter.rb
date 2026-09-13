@@ -242,12 +242,12 @@ module ArJdbc
       old_defer_foreign_keys = query_value("PRAGMA defer_foreign_keys")
 
       begin
-        raw_execute("PRAGMA defer_foreign_keys = ON", "SCHEMA", allow_retry: false, materialize_transactions: false)
-        raw_execute("PRAGMA foreign_keys = OFF", "SCHEMA", allow_retry: false, materialize_transactions: false)
+        execute("PRAGMA defer_foreign_keys = ON", "SCHEMA")
+        execute("PRAGMA foreign_keys = OFF", "SCHEMA")
         yield
       ensure
-        raw_execute("PRAGMA defer_foreign_keys = #{old_defer_foreign_keys}", "SCHEMA", allow_retry: false, materialize_transactions: false)
-        raw_execute("PRAGMA foreign_keys = #{old_foreign_keys}", "SCHEMA", allow_retry: false, materialize_transactions: false)
+        execute("PRAGMA defer_foreign_keys = #{old_defer_foreign_keys}", "SCHEMA")
+        execute("PRAGMA foreign_keys = #{old_foreign_keys}", "SCHEMA")
       end
     end
 
@@ -825,7 +825,7 @@ module ArJdbc
           stmt = ::SQLite3::Pragmas.public_send(pragma, value)
           # Skip pragma execution if we're inside a transaction and it's not allowed
           begin
-            raw_execute(stmt, "SCHEMA")
+            raw_connection.execute(stmt)
           rescue => e
             if e.message.include?("Safety level may not be changed inside a transaction")
               # Log warning and skip this pragma
