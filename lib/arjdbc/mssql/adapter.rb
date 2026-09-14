@@ -479,31 +479,31 @@ module ActiveRecord
       def translate_exception(exception, message:, sql:, binds:)
         case message
         when /no connection available/i
-          ConnectionNotEstablished.new(exception)
+          ConnectionNotEstablished.new(message, connection_pool: @pool)
         when /(cannot insert duplicate key .* with unique index) | (violation of unique key constraint)/i
-          RecordNotUnique.new(message, sql: sql, binds: binds)
+          RecordNotUnique.new(message, sql: sql, binds: binds, connection_pool: @pool)
         when /Violation of PRIMARY KEY constraint .* Cannot insert duplicate key in object .* The duplicate key value is/i
-          RecordNotUnique.new(message, sql: sql, binds: binds)
+          RecordNotUnique.new(message, sql: sql, binds: binds, connection_pool: @pool)
         when /Lock request time out period exceeded/i
           LockTimeout.new(message, sql: sql, binds: binds)
         when /The .* statement conflicted with the FOREIGN KEY constraint/
-          InvalidForeignKey.new(message, sql: sql, binds: binds)
+          InvalidForeignKey.new(message, sql: sql, binds: binds, connection_pool: @pool)
         when /Could not drop object .* because it is referenced by a FOREIGN KEY constraint/
-          StatementInvalid.new(message, sql: sql, binds: binds)
+          StatementInvalid.new(message, sql: sql, binds: binds, connection_pool: @pool)
         when /The .* statement conflicted with the REFERENCE constraint/
-          InvalidForeignKey.new(message, sql: sql, binds: binds)
+          InvalidForeignKey.new(message, sql: sql, binds: binds, connection_pool: @pool)
         when /(String or binary data would be truncated)/i
-          ValueTooLong.new(message, sql: sql, binds: binds)
+          ValueTooLong.new(message, sql: sql, binds: binds, connection_pool: @pool)
         when /Cannot insert the value NULL into column .* does not allow nulls/
-          NotNullViolation.new(message, sql: sql, binds: binds)
+          NotNullViolation.new(message, sql: sql, binds: binds, connection_pool: @pool)
         when /Arithmetic overflow error converting expression/
           RangeError.new(message, sql: sql, binds: binds)
         when /Snapshot isolation transaction aborted due to update conflict. You cannot use snapshot isolation/
-          StatementInvalid.new(message, sql: sql, binds: binds)
+          StatementInvalid.new(message, sql: sql, binds: binds, connection_pool: @pool)
         when /Incorrect syntax near the keyword .*/
-          StatementInvalid.new(message, sql: sql, binds: binds)
+          StatementInvalid.new(message, sql: sql, binds: binds, connection_pool: @pool)
         when /Could not find stored procedure .*/
-          StatementInvalid.new(message, sql: sql, binds: binds)
+          StatementInvalid.new(message, sql: sql, binds: binds, connection_pool: @pool)
         else
           super
         end
