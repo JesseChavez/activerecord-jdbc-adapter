@@ -29,6 +29,7 @@ require 'arjdbc/mssql/transaction'
 require 'arjdbc/mssql/errors'
 require 'arjdbc/mssql/schema_creation'
 require 'arjdbc/mssql/database_limits'
+require "arjdbc/mssql/type_metadata"
 
 require "arjdbc/mssql/adapter_hash_config"
 

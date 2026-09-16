@@ -3186,9 +3186,11 @@ public class RubyJdbcConnection extends RubyObject {
 
             final IRubyObject type_metadata = adapter.callMethod(context, "fetch_type_metadata", sqlType);
 
+            final IRubyObject cast_type = adapter.callMethod(context, "lookup_cast_type", sqlType);
+
             // (name, default, sql_type_metadata = nil, null = true, table_name = nil, default_function = nil, collation = nil, comment: nil)
             final IRubyObject[] args = new IRubyObject[] {
-                columnName, defaultValue, type_metadata, nullable, tableName
+                columnName, cast_type, defaultValue, type_metadata, nullable, tableName
             };
             columns.append(context, Column.newInstance(context, args, Block.NULL_BLOCK));
         }

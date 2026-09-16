@@ -6,12 +6,12 @@ module ActiveRecord
     class MSSQLColumn < Column
       attr_reader :table_name
 
-      def initialize(name, raw_default, sql_type_metadata = nil, null = true, table_name = nil, default_function = nil, collation = nil, comment: nil)
+      def initialize(name, cast_type, raw_default, sql_type_metadata = nil, null = true, table_name = nil, default_function = nil, collation = nil, comment: nil)
         @table_name = table_name
 
         default_val, default_fun = extract_default(raw_default)
 
-        super(name, default_val, sql_type_metadata, null, default_fun, collation: collation, comment: comment)
+        super(name, cast_type, default_val, sql_type_metadata, null, default_fun, collation: collation, comment: comment)
       end
 
       def extract_default(value)

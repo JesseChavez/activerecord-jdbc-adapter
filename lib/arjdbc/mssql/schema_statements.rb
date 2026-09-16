@@ -419,6 +419,10 @@ module ActiveRecord
           field
         end
 
+        def fetch_type_metadata(sql_type)
+          MSSQL::TypeMetadata.new(super(sql_type))
+        end
+
         def create_db_edition_options(options = {})
           edition_config = options.select { |k, _v| k.match?('azure') }
 
