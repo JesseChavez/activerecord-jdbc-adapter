@@ -11,6 +11,13 @@ module ArJdbc
         _arjdbc_array_parser.parse_pg_array(value)
       end
 
+      # Returns an array of the names of all schemas presently in the effective search path,
+      # in their priority order.
+      def current_schemas # :nodoc:
+        schemas = query_value("SELECT current_schemas(false)", "SCHEMA")
+        decode_string_array(schemas)
+      end
+
       private
 
       def _arjdbc_array_parser
