@@ -20,12 +20,13 @@ module ActiveRecord
 
         # This is the Rails binary type
         class VarbinaryMax < ActiveRecord::Type::Binary
-          def type
-            :binary
+          def initialize(**args)
+            super
+            @limit = 2_147_483_647
           end
 
-          def limit
-            @limit ||= 2_147_483_647
+          def type
+            :binary
           end
         end
 

@@ -19,12 +19,13 @@ module ActiveRecord
         end
 
         class VarcharMax < ActiveRecord::Type::String
-          def type
-            :varchar_max
+          def initialize(**args)
+            super
+            @limit = 2_147_483_647
           end
 
-          def limit
-            @limit ||= 2_147_483_647
+          def type
+            :varchar_max
           end
         end
 
@@ -43,12 +44,13 @@ module ActiveRecord
 
         # This is  Rails logical text type
         class NvarcharMax < ActiveRecord::Type::String
-          def type
-            :text
+          def initialize(**args)
+            super
+            @limit = 2_147_483_647
           end
 
-          def limit
-            @limit ||= 2_147_483_647
+          def type
+            :text
           end
         end
 

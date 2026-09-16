@@ -7,32 +7,35 @@ module ActiveRecord
       module Type
 
         class Text < ActiveRecord::Type::String
-          def type
-            :text_basic
+          def initialize(**args)
+            super
+            @limit = 2_147_483_647
           end
 
-          def limit
-            @limit ||= 2_147_483_647
+          def type
+            :text_basic
           end
         end
 
         class Ntext < ActiveRecord::Type::String
-          def type
-            :ntext
+          def initialize(**args)
+            super
+            @limit = 2_147_483_647
           end
 
-          def limit
-            @limit ||= 2_147_483_647
+          def type
+            :ntext
           end
         end
 
         class Image < ActiveRecord::Type::Binary
-          def type
-            :image
+          def initialize(**args)
+            super
+            @limit = 2_147_483_647
           end
 
-          def limit
-            @limit ||= 2_147_483_647
+          def type
+            :image
           end
         end
 
