@@ -957,8 +957,6 @@ module ActiveRecord::ConnectionAdapters
     FEATURE_NOT_SUPPORTED = "0A000" # :nodoc:
 
     def execute_and_clear(sql, name, binds, prepare: false, async: false)
-      check_if_write_query(sql)
-
       if !prepare || without_prepared_statement?(binds)
         result = exec_no_cache(sql, name, binds, async: async)
       else
@@ -975,7 +973,6 @@ module ActiveRecord::ConnectionAdapters
 
     def exec_no_cache(sql, name, binds, async: false)
       materialize_transactions
-      mark_transaction_written_if_write(sql)
 
       # make sure we carry over any changes to ActiveRecord.default_timezone that have been
       # made since we established the connection
@@ -993,7 +990,6 @@ module ActiveRecord::ConnectionAdapters
 
     def exec_cache(sql, name, binds, async: false)
       materialize_transactions
-      mark_transaction_written_if_write(sql)
       update_typemap_for_default_timezone
 
       stmt_key = prepare_statement(sql, binds)

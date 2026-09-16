@@ -10,13 +10,7 @@ module ArJdbc
       NO_BINDS = [].freeze
 
       def exec_insert(sql, name = nil, binds = NO_BINDS, pk = nil, sequence_name = nil, returning: nil)
-        if preventing_writes?
-          raise ActiveRecord::ReadOnlyError, "Write query attempted while in readonly mode: #{sql}"
-        end
-
-        mark_transaction_written_if_write(sql)
-
-        binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
+        sql = preprocess_query(sql)
 
         type_casted_binds = type_casted_binds(binds)
 
@@ -36,13 +30,7 @@ module ArJdbc
       # It appears that at this point (AR 5.0) "prepare" should only ever be true
       # if prepared statements are enabled
       def internal_exec_query(sql, name = nil, binds = NO_BINDS, prepare: false, async: false, allow_retry: false, materialize_transactions: true)
-        if preventing_writes? && write_query?(sql)
-          raise ActiveRecord::ReadOnlyError, "Write query attempted while in readonly mode: #{sql}"
-        end
-
-        mark_transaction_written_if_write(sql)
-
-        binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
+        sql = preprocess_query(sql)
 
         # puts "[1]internal----->sql: #{sql}, binds: #{binds}"
         type_casted_binds = type_casted_binds(binds)
@@ -62,11 +50,7 @@ module ArJdbc
       end
 
       def exec_update(sql, name = 'SQL', binds = NO_BINDS)
-        if preventing_writes?
-          raise ActiveRecord::ReadOnlyError, "Write query attempted while in readonly mode: #{sql}"
-        end
-
-        mark_transaction_written_if_write(sql)
+        sql = preprocess_query(sql)
 
         binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
 
@@ -102,12 +86,6 @@ module ArJdbc
         binds.map do |column, value|
           ActiveRecord::Relation::QueryAttribute.new(nil, type_cast(value, column), ActiveModel::Type::Value.new)
         end
-      end
-
-      def preprocess_query(sql)
-        check_if_write_query(sql) if respond_to?(:check_if_write_query, true)
-        mark_transaction_written_if_write(sql) if respond_to?(:mark_transaction_written_if_write, true)
-        sql
       end
     end
   end
