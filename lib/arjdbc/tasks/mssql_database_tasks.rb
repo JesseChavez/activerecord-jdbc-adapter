@@ -4,7 +4,7 @@ require 'active_record/tasks/database_tasks'
 
 module ArJdbc
   module Tasks # :nodoc:
-    class MSSQLDatabaseTasks # :nodoc:
+    class MSSQLDatabaseTasks < ActiveRecord::Tasks::AbstractTasks # :nodoc:
       def self.using_database_configurations?
         true
       end
@@ -127,25 +127,5 @@ module ArJdbc
         msg
       end
     end
-
-    module DatabaseTasksMSSQL
-      extend ActiveSupport::Concern
-
-      module ClassMethods
-
-      def check_protected_environments!
-        super
-      rescue ActiveRecord::JDBCError => e
-        case e.message
-        when /cannot open database .* requested by the login/i
-        else
-          raise
-        end
-      end
-
-      end
-    end
-
-    ActiveRecord::Tasks::DatabaseTasks.send(:include, DatabaseTasksMSSQL)
   end
 end
