@@ -92,7 +92,7 @@ module ActiveRecord
           end
         end
 
-        def internal_exec_query(sql, name = 'SQL', binds = [], prepare: false, async: false, allow_retry: false)
+        def internal_exec_query(sql, name = 'SQL', binds = [], prepare: false, async: false, allow_retry: false, materialize_transactions: true)
           sql = preprocess_query(sql)
 
           # binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
