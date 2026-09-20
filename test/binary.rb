@@ -68,6 +68,25 @@ module BinaryTestMethods
     assert_nil model.reload.short_data
   end
 
+  def test_update_data
+    model = Binary.create!(:data => 'some-data', :short_data => "abc")
+
+    assert model.data
+    assert model.reload.data
+
+    assert model.short_data
+    assert model.reload.short_data
+
+    model.data = "updated-data"
+    model.short_data = nil
+
+    model.save!
+    assert model.data
+    assert model.reload.data
+
+    assert_nil model.short_data
+    assert_nil model.reload.short_data
+  end
 end
 
 #end
