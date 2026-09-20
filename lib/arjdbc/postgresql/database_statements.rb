@@ -21,9 +21,9 @@ module ArJdbc
       def internal_exec_query(sql, name = nil, binds = [], prepare: false, async: false, allow_retry: false, materialize_transactions: true)
           sql = preprocess_query(sql)
 
-        # puts "[1]internal----->sql: #{sql}, binds: #{binds}"
+        # puts "[1]internal_exec_query----->sql: #{sql}, binds: #{binds}"
         type_casted_binds = type_casted_binds(binds)
-        # puts "[2]internal----->sql: #{type_casted_binds.size}, binds: #{type_casted_binds}"
+        # puts "[2]internal_exec_query----->sql: #{type_casted_binds.size}, binds: #{type_casted_binds}"
 
         with_raw_connection do |conn|
           if without_prepared_statement?(binds)
@@ -39,6 +39,7 @@ module ArJdbc
       end
 
       def perform_query(raw_connection, sql, binds, type_casted_binds, prepare:, notification_payload:, batch:)
+        # puts "perform_query----->sql: #{sql}, binds: #{binds}"
         result = raw_connection.execute(sql)
 
         count = 0

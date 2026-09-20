@@ -97,7 +97,7 @@ module ActiveRecord
 
           # binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
 
-          # puts "[1]internal----->sql: #{sql}, binds: #{binds}"
+          # puts "[1]internal_exec_query----->sql: #{sql}, binds: #{binds}"
           type_casted_binds = type_casted_binds(binds)
           # puts "[2]internal----->sql: #{type_casted_binds.size}, binds: #{type_casted_binds}"
 
@@ -198,6 +198,7 @@ module ActiveRecord
 
 
         def perform_query(raw_connection, sql, binds, type_casted_binds, prepare:, notification_payload:, batch:)
+          # puts "perform_query----->sql: #{sql}, binds: #{binds}"
           result = conditional_indentity_insert(sql) { raw_connection.execute(sql) }
 
           count = 0
