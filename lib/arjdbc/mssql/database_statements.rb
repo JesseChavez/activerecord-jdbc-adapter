@@ -112,7 +112,7 @@ module ActiveRecord
               end
             end
           else
-            log(sql, name, type_casted_binds) do
+            log(sql, name, binds, type_casted_binds, async: async) do
               with_raw_connection do |conn|
                 # this is different from normal AR that always caches
                 cached_statement = fetch_cached_statement(sql) if prepare && @jdbc_statement_cache_enabled
