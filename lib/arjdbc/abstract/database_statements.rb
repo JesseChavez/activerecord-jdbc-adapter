@@ -40,7 +40,7 @@ module ArJdbc
           if without_prepared_statement?(binds)
             log(sql, name, async: async) { conn.execute_query(sql) }
           else
-            log(sql, name, type_casted_binds, async: async) do
+            log(sql, name, binds, type_casted_binds, async: async) do
               # this is different from normal AR that always caches
               cached_statement = fetch_cached_statement(sql) if prepare && @jdbc_statement_cache_enabled
               conn.execute_prepared_query(sql, binds, cached_statement)
