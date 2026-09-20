@@ -15,10 +15,13 @@ MSSQL_CONFIG[:trust_server_certificate] = true
 
 MSSQL_CONFIG[:port] = ENV['SQLPORT'] if ENV['SQLPORT']
 
-unless ( ps = ENV['PREPARED_STATEMENTS'] || ENV['PS'] ).nil?
-  MSSQL_CONFIG[:prepared_statements] = ps
-end
+prep_stm = ENV['PREPARED_STATEMENTS'] || ENV['PS']
 
+if [true, "true"].include?(prep_stm)
+  MSSQL_CONFIG[:prepared_statements] = true
+else
+  MSSQL_CONFIG[:prepared_statements] = false
+end
 
 if ENV['DRIVER'] =~ /jTDS/i
   # change adapter for jTDS

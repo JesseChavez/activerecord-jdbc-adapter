@@ -30,6 +30,7 @@ jobs:
         ruby-version: ['jruby-10.0.6.0']
         db: ['mssql']
         test_targets: ['test_mssql']
+        prepared_statements: ['true', 'false']
 
     # NOTE: using a specific tag, it fails with 2019-latest.
     # it seems the issue is related to some changes in mssql tools
@@ -55,6 +56,7 @@ jobs:
       JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M"
       SQLUSER: SA
       SQLPASS: Password12!
+      PREPARED_STATEMENTS: ${{ matrix.prepared_statements }}
 
     steps:
       - uses: actions/checkout@v3
