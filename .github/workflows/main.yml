@@ -31,6 +31,7 @@ jobs:
         db: ['mssql']
         test_targets: ['test_mssql']
         prepared_statements: ['true', 'false']
+        ar_version: ["8-1-stable-dev"]
 
     # NOTE: using a specific tag, it fails with 2019-latest.
     # it seems the issue is related to some changes in mssql tools
@@ -57,6 +58,7 @@ jobs:
       SQLUSER: SA
       SQLPASS: Password12!
       PREPARED_STATEMENTS: ${{ matrix.prepared_statements }}
+      AR_VERSION: ${{ matrix.ar_version }}
 
     steps:
       - uses: actions/checkout@v3
@@ -87,10 +89,12 @@ jobs:
         ruby-version: ['jruby-10.0.6.0']
         db: ['sqlite3']
         test_targets: ['test_sqlite3']
+        ar_version: ["8-1-stable-dev"]
 
     env:
       DB: ${{ matrix.db }}
       JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M --dev"
+      AR_VERSION: ${{ matrix.ar_version }}
 
     steps:
       - uses: actions/checkout@v4
@@ -118,6 +122,7 @@ jobs:
         test_targets: ["db:postgresql test_postgresql"]
         prepared_statements: ['false', 'true']
         insert_returning: ['false', 'true']
+        ar_version: ["8-1-stable-dev"]
 
     services:
       postgres:
@@ -134,6 +139,7 @@ jobs:
       JRUBY_OPTS: "-J-Xms64M -J-Xmx1024M"
       PREPARED_STATEMENTS: ${{ matrix.prepared_statements }}
       INSERT_RETURNING: ${{ matrix.insert_returning }}
+      AR_VERSION: ${{ matrix.ar_version }}
       PGHOST: localhost
       PGPORT: 5432
       PGUSER: postgres
