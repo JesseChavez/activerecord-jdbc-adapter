@@ -144,7 +144,7 @@ module ActiveRecord
           else
             log(sql, name, binds, type_casted_binds) do
               with_raw_connection do |conn|
-                result = conn.execute_prepared_update(sql, type_casted_binds)
+                result = conn.execute_prepared_update(sql, binds)
                 verified!
                 result
               end
