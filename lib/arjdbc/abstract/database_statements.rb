@@ -12,8 +12,6 @@ module ArJdbc
       def exec_insert(sql, name = nil, binds = NO_BINDS, pk = nil, sequence_name = nil, returning: nil)
         sql = preprocess_query(sql)
 
-        binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
-
         with_raw_connection do |conn|
           if without_prepared_statement?(binds)
             log(sql, name) { conn.execute_insert_pk(sql, pk) }
@@ -37,8 +35,6 @@ module ArJdbc
       end
 
       def raw_exec_query(sql, name = nil, binds = NO_BINDS, prepare: false, async: false, allow_retry: false, materialize_transactions: true)
-        binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
-
         # puts "[1]internal----->sql: #{sql}, binds: #{binds}"
         type_casted_binds = type_casted_binds(binds)
         # puts "[2]internal----->sql: #{type_casted_binds.size}, binds: #{type_casted_binds}"
@@ -59,8 +55,6 @@ module ArJdbc
       def exec_update(sql, name = 'SQL', binds = NO_BINDS)
         sql = preprocess_query(sql)
 
-        binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
-
         with_raw_connection do |conn|
           if without_prepared_statement?(binds)
             log(sql, name) { conn.execute_update(sql) }
@@ -73,22 +67,10 @@ module ArJdbc
 
       alias :exec_delete :exec_update
 
-      # overridden to support legacy binds
-      def select_all(arel, name = nil, binds = NO_BINDS, preparable: nil, async: false, allow_retry: false)
-        binds = convert_legacy_binds_to_attributes(binds) if binds.first.is_a?(Array)
-        super
-      end
-
       private
 
       def without_prepared_statement?(binds)
         !prepared_statements || binds.empty?
-      end
-
-      def convert_legacy_binds_to_attributes(binds)
-        binds.map do |column, value|
-          ActiveRecord::Relation::QueryAttribute.new(nil, type_cast(value, column), ActiveModel::Type::Value.new)
-        end
       end
     end
   end
