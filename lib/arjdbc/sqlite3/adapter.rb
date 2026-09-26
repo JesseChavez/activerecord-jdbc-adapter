@@ -21,6 +21,7 @@ require "arjdbc/sqlite3/adapter_hash_config"
 require "arjdbc/sqlite3/pragmas"
 
 require "arjdbc/abstract/relation_query_attribute_monkey_patch"
+require "arjdbc/abstract/mock_logger_jruby_compat_monkey_patch"
 
 require "arjdbc/sqlite3/database_statements"
 
@@ -475,6 +476,7 @@ module ArJdbc
 
       ActiveRecord::ConnectionAdapters::SQLite3Column.new(
         field["name"],
+        lookup_cast_type(field["type"]),
         default_value,
         type_metadata,
         field["notnull"].to_i == 0,
@@ -611,8 +613,7 @@ module ArJdbc
             column_options[:stored] = column.virtual_stored?
             column_options[:type] = column.type
           elsif column.has_default?
-            type = lookup_cast_type_from_column(column)
-            default = type.deserialize(column.default)
+            default = column.fetch_cast_type(self).deserialize(column.default)
             default = -> { column.default_function } if default.nil?
 
             unless column.auto_increment?

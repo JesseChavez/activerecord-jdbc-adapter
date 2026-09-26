@@ -38,19 +38,31 @@ module ActiveRecord
         # Internal method to test different isolation levels supported by this
         # mssql adapter. NOTE: not a active record method
         def supports_transaction_isolation_level?(level)
-          raw_jdbc_connection.supports_transaction_isolation?(level)
+          with_raw_connection(allow_retry: true, materialize_transactions: false) do |conn|
+            result = conn.supports_transaction_isolation?(level)
+            verified!
+            result
+          end
         end
 
         # Internal method to test different isolation levels supported by this
         # mssql adapter. Not a active record method
         def transaction_isolation=(value)
-          raw_jdbc_connection.set_transaction_isolation(value)
+          with_raw_connection(allow_retry: true, materialize_transactions: false) do |conn|
+            result = conn.set_transaction_isolation(value)
+            verified!
+            result
+          end
         end
 
         # Internal method to test different isolation levels supported by this
         # mssql adapter. Not a active record method
         def transaction_isolation
-          raw_jdbc_connection.get_transaction_isolation
+          with_raw_connection(allow_retry: true, materialize_transactions: false) do |conn|
+            result = conn.get_transaction_isolation
+            verified!
+            result
+          end
         end
 
         def insert_fixtures_set(fixture_set, tables_to_delete = [])
@@ -252,10 +264,6 @@ module ActiveRecord
           else
             block.call
           end
-        end
-
-        def raw_jdbc_connection
-          any_raw_connection
         end
 
         # It seems the truncate_tables is mostly used for testing

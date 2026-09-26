@@ -69,6 +69,7 @@ class Test::Unit::TestCase
   include StubHelper
 
   alias skip omit
+  alias pend omit if Test::Unit::AutoRunner::RUNNERS.key?(:teamcity)
 
   def self.establish_connection(config)
     ActiveRecord::Base.establish_connection(config).tap do
