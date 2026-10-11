@@ -77,7 +77,11 @@ module ActiveRecord
         end
 
         def primary_keys(table_name)
-          valid_raw_connection.primary_keys(table_name)
+          with_raw_connection do |conn|
+            result = conn.primary_keys(table_name)
+            verified!
+            result
+          end
         end
 
         def build_change_column_definition(table_name, column_name, type, **options) # :nodoc:

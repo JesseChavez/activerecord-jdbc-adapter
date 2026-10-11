@@ -515,11 +515,13 @@ module ActiveRecord
       # NOTE: This is ready, all implemented in the java part of adapter,
       # it uses MSSQLColumn, SqlTypeMetadata, etc.
       def column_definitions(table_name)
-        log('JDBC: GETCOLUMNS', 'SCHEMA') { valid_raw_connection.columns(table_name, nil, default_schema) }
-        # raise translate_exception_class(e, nil)
-        # FIXME: this breaks one arjdbc test but fixes activerecord tests
-        # (table name alias). Also it behaves similarly to the CRuby adapter
-        # which returns an empty array too. (postgres throws a exception)
+        log('JDBC: GETCOLUMNS', 'SCHEMA') do
+          with_raw_connection do |conn|
+            result = conn.columns(table_name, nil, default_schema)
+            verified!
+            result
+          end
+        end
       end
 
       def arel_visitor # :nodoc:
